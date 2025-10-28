@@ -1,8 +1,8 @@
 [package]
-name = "mermaidjs_desktop"
-version = "0.1.0"
-description = "MermaidJS desktop shell"
-authors = ["you"]
+name = "mermaidjs_desktop_client"
+version = "2.0.0"
+description = "A Tauri desktop editor for Mermaid diagrams with live preview and export tooling."
+authors = ["Martin M."]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
