@@ -2,14 +2,27 @@
 
 MermaidJS Desktop Client is a Tauri-powered editor for creating and exporting [Mermaid](https://mermaid.js.org/) diagrams. It pairs a CodeMirror-based authoring experience with a live preview, file management helpers, and export tooling for PNG and SVG assets.
 
+# Table of Contents
+
+1. [Features](#features)
+2. [Prerequisites](#prerequisites)
+3. [Getting Started](#getting-started)
+4. [Building](#building)
+5. [Tooling](#tooling)
+6. [Project Structure](#project-structure)
+7. [Screenshots](#screenshots)
+8. [Acknowledgements](#acknowledgements)
+
 ## Features
 
-- **Live editing** – Write Mermaid syntax with syntax highlighting, line wrapping, and tab indentation.
-- **Instant preview** – Debounced rendering keeps the preview in sync while typing, with friendly error feedback when diagrams fail to render.
-- **File workflow** – New, open, and save actions integrate with the native filesystem via Tauri dialog and fs plugins.
-- **Exports** – Save diagrams as PNG (1× and 2× scale) or SVG with built-in padding, white backgrounds, and aspect-correct scaling.
+- **Live editing** – Write Mermaid syntax with syntax highlighting, line wrapping, and tab indentation support.
+- **Instant preview** – Debounced rendering (300ms) keeps the preview in sync while typing, with friendly error feedback when diagrams fail to render.
+- **File workflow** – New, open, and save actions integrate with the native filesystem via Tauri dialog and fs plugins. Status bar tracks unsaved changes and last saved time.
+- **Built-in examples** – Quick-start templates for flowchart, class, sequence, entity-relationship, state, gantt, and git diagrams.
+- **Smart exports** – Save diagrams as PNG (1× and 2× scale) or SVG with built-in padding, white backgrounds, and automatic scaling (min 512px for 1×, 1024px for 2×).
+- **Keyboard shortcuts** – Standard shortcuts for new (Cmd/Ctrl+N), open (Cmd/Ctrl+O), and save (Cmd/Ctrl+S).
 - **Resizable workspace** – Drag the divider to resize editor/preview panes or double-click to reset.
-- **Window persistence** – Window position, size, and maximized state persist between launches.
+- **Window persistence** – Window position, size, and maximized state persist between launches via Tauri store plugin.
 
 ## Prerequisites
 
@@ -30,13 +43,13 @@ pnpm install
 pnpm tauri dev
 ```
 
-The command above launches both the Vite dev server and the Tauri shell. If you only need the web preview (without the native shell), you can run:
+The command above launches both the Vite dev server and the Tauri shell. For faster iteration on UI/preview features without native APIs, you can run the frontend standalone:
 
 ```bash
 pnpm dev
 ```
 
-and open the reported URL in your browser.
+and open the reported URL (typically `http://localhost:5173`) in your browser.
 
 ## Building
 
@@ -44,23 +57,38 @@ and open the reported URL in your browser.
 # Type-check and bundle the frontend
 pnpm build
 
-# Produce a production macOS .app bundle
+# Produce a platform-specific production bundle
+# Creates .app on macOS, .exe installer on Windows, or .deb/.AppImage on Linux
 pnpm tauri build
 ```
 
 ## Tooling
 
 - `pnpm clean` – Remove build artifacts (`dist/`, `src-tauri/target/`)
-- `pnpm lint:check` – Run Biome checks across the project
+- `pnpm lint:check` – Run [Biome](https://biomejs.dev/) linter and formatter checks
 - `pnpm lint:fix` – Automatically apply Biome fixes
 - `pnpm lint:format` – Format files with Biome
 
 ## Project Structure
 
-- `src/` – Frontend source (editor, preview, toolbar, workspace helpers, styles)
-- `src-tauri/` – Tauri backend configuration and Rust bootstrap
+- `src/` – Frontend source (TypeScript/Vite)
+  - `editor/` – CodeMirror configuration (language support, theme)
+  - `preview/` – Mermaid rendering logic
+  - `toolbar/` – File operations, export handlers, examples menu
+  - `workspace/` – Resizable pane management
+  - `window/` – Persistence layer for window state
+  - `examples/` – Built-in Mermaid diagram templates
+- `src-tauri/` – Tauri backend (Rust) with plugins for dialog, filesystem, and store
 - `public/` – Static assets served by Vite (if added)
+
+## Screenshots
+
+<p align="center">
+  <img src="https://i.imgur.com/CJz8cVo.png" alt="Editor and preview workspace" width="30%" />
+  <img src="https://i.imgur.com/pn6gfKd.png" alt="Example diagrams menu" width="30%" />
+  <img src="https://i.imgur.com/UJt3kFq.png" alt="Export options" width="30%" />
+</p>
 
 ## Acknowledgements
 
-Built with [Tauri 2.x](https://tauri.app/), [Vite](https://vitejs.dev/), [CodeMirror 6](https://codemirror.net/6/), and [Mermaid 11](https://mermaid.js.org/).
+Built with [Tauri 2](https://tauri.app/) (v2.9+), [Vite 7](https://vitejs.dev/), [CodeMirror 6](https://codemirror.net/6/), [Mermaid 11](https://mermaid.js.org/) (v11.12+), and [Biome](https://biomejs.dev/) for linting/formatting.
