@@ -10,6 +10,7 @@ import { createMermaidLanguage } from './editor/language';
 import { createEditorTheme } from './editor/theme';
 import { createPreview } from './preview/render';
 import { setupToolbarActions } from './toolbar/actions';
+import { setupToolbarShortcuts } from './toolbar/shortcuts';
 import { loadSettingsStore, setupWindowPersistence } from './window/state';
 import { initHorizontalResize } from './workspace/resize';
 
@@ -32,10 +33,16 @@ async function bootstrap(): Promise<void> {
   const newDiagramButton = document.querySelector<HTMLButtonElement>('[data-action="new-diagram"]');
   const saveButton = document.querySelector<HTMLButtonElement>('[data-action="save-diagram"]');
   const openButton = document.querySelector<HTMLButtonElement>('[data-action="open-diagram"]');
+  const examplesButton = document.querySelector<HTMLButtonElement>('[data-action="examples-menu"]');
+  const examplesMenu = document.querySelector<HTMLDivElement>(
+    '[data-dropdown="examples"] .toolbar-menu'
+  );
   const exportButton = document.querySelector<HTMLButtonElement>('[data-action="export-menu"]');
   const exportMenu = document.querySelector<HTMLDivElement>(
     '[data-dropdown="export"] .toolbar-menu'
   );
+  const statusMessage = document.querySelector<HTMLSpanElement>('[data-status="message"]');
+  const statusFile = document.querySelector<HTMLSpanElement>('[data-status="file"]');
   const workspace = document.querySelector<HTMLDivElement>('.workspace');
   const editorPane = document.querySelector<HTMLElement>('[data-pane="editor"]');
   const previewPane = document.querySelector<HTMLElement>('[data-pane="preview"]');
@@ -57,9 +64,54 @@ async function bootstrap(): Promise<void> {
     await setupWindowPersistence(store, appWindow, WINDOW_PERSIST_DELAY);
   }
 
-  const schedulePreviewRender = createPreview(previewElement, RENDER_DELAY);
-  const editor = createEditor(host, DEFAULT_SNIPPET, schedulePreviewRender);
+  const status = createStatusController(statusMessage);
+  const fileStatus = createFileStatusController(statusFile);
+
+  let lastCommittedDoc = DEFAULT_SNIPPET;
+  let isDocumentDirty = false;
+  let lastSavedAt: Date | null = null;
   let currentFilePath: string | null = null;
+
+  const updateFileStatus = () => {
+    fileStatus.update({
+      path: currentFilePath,
+      dirty: isDocumentDirty,
+      lastSavedAt,
+    });
+  };
+
+  const schedulePreviewRender = createPreview(previewElement, RENDER_DELAY, {
+    onRenderStart() {
+      status.rendering();
+    },
+    onRenderSuccess() {
+      status.success('Preview updated successfully');
+    },
+    onRenderEmpty() {
+      status.info('Waiting for Mermaid markup...');
+    },
+    onRenderError(details) {
+      status.error(details);
+    },
+  });
+  const handleDocChange = (doc: string) => {
+    isDocumentDirty = doc !== lastCommittedDoc;
+    updateFileStatus();
+  };
+
+  const commitDocument = (doc: string, options?: { saved?: boolean }) => {
+    lastCommittedDoc = doc;
+    isDocumentDirty = false;
+    if (options?.saved) {
+      lastSavedAt = new Date();
+    } else if (!currentFilePath) {
+      lastSavedAt = null;
+    }
+    updateFileStatus();
+  };
+
+  const editor = createEditor(host, DEFAULT_SNIPPET, schedulePreviewRender, handleDocChange);
+  commitDocument(editor.state.doc.toString());
 
   editor.focus();
   host.dataset.editor = 'mounted';
@@ -75,20 +127,40 @@ async function bootstrap(): Promise<void> {
     saveButton,
     exportButton,
     exportMenu,
+    examplesButton,
+    examplesMenu,
+    isDirty() {
+      return isDocumentDirty;
+    },
+    commitDocument,
     onPathChange(path) {
+      const previousPath = currentFilePath;
       currentFilePath = path;
+      if (path === null) {
+        lastSavedAt = null;
+      } else if (path !== previousPath) {
+        lastSavedAt = null;
+      }
+      updateFileStatus();
     },
     getPath() {
       return currentFilePath;
     },
     defaultSnippet: DEFAULT_SNIPPET,
   });
+
+  setupToolbarShortcuts({
+    newButton: newDiagramButton,
+    openButton,
+    saveButton,
+  });
 }
 
 function createEditor(
   host: HTMLElement,
   initialDoc: string,
-  schedulePreviewRender: (doc: string) => void
+  schedulePreviewRender: (doc: string) => void,
+  onDocChange?: (doc: string) => void
 ): EditorView {
   const state = EditorState.create({
     doc: initialDoc,
@@ -100,7 +172,9 @@ function createEditor(
       keymap.of([indentWithTab]),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
-          schedulePreviewRender(update.state.doc.toString());
+          const nextDoc = update.state.doc.toString();
+          schedulePreviewRender(nextDoc);
+          onDocChange?.(nextDoc);
         }
       }),
     ],
@@ -110,4 +184,136 @@ function createEditor(
     parent: host,
     state,
   });
+}
+
+type StatusLevel = 'idle' | 'loading' | 'success' | 'error' | 'info';
+
+function createStatusController(element: HTMLSpanElement | null): {
+  idle(message?: string): void;
+  rendering(message?: string): void;
+  success(message?: string): void;
+  info(message: string): void;
+  error(details: string): void;
+} {
+  const noop = () => {
+    /* intentionally empty */
+  };
+  if (!element) {
+    return {
+      idle: noop,
+      rendering: noop,
+      success: noop,
+      info: noop,
+      error: noop,
+    };
+  }
+
+  const target = element;
+
+  const defaultMessage = (target.textContent || 'Ready.').trim() || 'Ready.';
+  let revertTimer: number | null = null;
+
+  function setStatus(message: string, level: StatusLevel, autoRevert = false): void {
+    if (revertTimer !== null) {
+      window.clearTimeout(revertTimer);
+      revertTimer = null;
+    }
+    target.textContent = message;
+    target.dataset.statusLevel = level;
+    if (autoRevert) {
+      revertTimer = window.setTimeout(() => {
+        target.textContent = defaultMessage;
+        target.dataset.statusLevel = 'idle';
+        revertTimer = null;
+      }, 4000);
+    }
+  }
+
+  setStatus(defaultMessage, 'idle');
+
+  return {
+    idle(message) {
+      setStatus(message ?? defaultMessage, 'idle');
+    },
+    rendering(message = 'Rendering preview...') {
+      setStatus(message, 'loading');
+    },
+    success(message = 'Preview updated.') {
+      setStatus(message, 'success', true);
+    },
+    info(message) {
+      setStatus(message, 'info');
+    },
+    error(details) {
+      const summary = details.split(/\r?\n/, 1)[0]?.trim() ?? 'Unknown error';
+      setStatus(`Render failed: ${summary}`, 'error');
+    },
+  };
+}
+
+interface FileStatusState {
+  path: string | null;
+  dirty: boolean;
+  lastSavedAt: Date | null;
+}
+
+function createFileStatusController(element: HTMLSpanElement | null): {
+  update(state: FileStatusState): void;
+} {
+  const noop = () => {
+    /* intentionally empty */
+  };
+  if (!element) {
+    return {
+      update: noop,
+    };
+  }
+
+  const formatName = (path: string | null): string => {
+    if (!path) {
+      return 'Untitled';
+    }
+    const normalized = path.replace(/\\/g, '/');
+    const lastSlash = normalized.lastIndexOf('/');
+    return lastSlash >= 0 ? normalized.slice(lastSlash + 1) : normalized;
+  };
+
+  const formatTime = (date: Date): string => {
+    return date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  return {
+    update(state) {
+      const { path, dirty, lastSavedAt } = state;
+      const name = formatName(path);
+
+      let details: string;
+      if (dirty) {
+        details = 'Unsaved changes';
+      } else if (lastSavedAt) {
+        details = `Saved ${formatTime(lastSavedAt)}`;
+      } else if (path) {
+        details = 'Opened from disk';
+      } else {
+        details = 'Not saved yet';
+      }
+
+      element.textContent = `${name} - ${details}`;
+      element.dataset.dirty = dirty ? 'true' : 'false';
+
+      const savedInfo = lastSavedAt ? `Last saved: ${lastSavedAt.toLocaleString()}` : null;
+      if (path && savedInfo) {
+        element.title = `${path}\n${savedInfo}`;
+      } else if (path) {
+        element.title = path;
+      } else if (savedInfo) {
+        element.title = savedInfo;
+      } else {
+        element.title = 'Unsaved diagram';
+      }
+    },
+  };
 }
