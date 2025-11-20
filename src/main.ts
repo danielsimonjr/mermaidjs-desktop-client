@@ -1,5 +1,5 @@
 import { indentWithTab } from '@codemirror/commands';
-import { EditorState } from '@codemirror/state';
+import { Compartment, EditorState, StateEffect } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { basicSetup, EditorView } from 'codemirror';
@@ -8,10 +8,27 @@ import 'remixicon/fonts/remixicon.css';
 
 import { createMermaidLanguage } from './editor/language';
 import { createEditorTheme } from './editor/theme';
+import {
+  createEditorZoomController,
+  createEditorZoomExtension,
+  createEditorZoomKeymap,
+} from './editor/zoom';
+import { setupHelpDialog } from './help/dialog';
 import { createPreview } from './preview/render';
+import {
+  createZoomController,
+  setupWheelZoom,
+  setupZoomControls,
+  updateLevelDisplay,
+} from './preview/zoom';
 import { setupToolbarActions } from './toolbar/actions';
 import { setupToolbarShortcuts } from './toolbar/shortcuts';
-import { loadSettingsStore, setupWindowPersistence } from './window/state';
+import {
+  loadEditorZoom,
+  loadSettingsStore,
+  saveEditorZoom,
+  setupWindowPersistence,
+} from './window/state';
 import { initHorizontalResize } from './workspace/resize';
 
 const DEFAULT_SNIPPET = `graph TD
@@ -47,6 +64,11 @@ async function bootstrap(): Promise<void> {
   const editorPane = document.querySelector<HTMLElement>('[data-pane="editor"]');
   const previewPane = document.querySelector<HTMLElement>('[data-pane="preview"]');
   const divider = document.querySelector<HTMLDivElement>('.divider');
+  const zoomInBtn = document.querySelector<HTMLButtonElement>('[data-action="zoom-in"]');
+  const zoomOutBtn = document.querySelector<HTMLButtonElement>('[data-action="zoom-out"]');
+  const zoomResetBtn = document.querySelector<HTMLButtonElement>('[data-action="zoom-reset"]');
+  const zoomLevelDisplay = document.querySelector<HTMLSpanElement>('[data-zoom-level]');
+  const helpButton = document.querySelector<HTMLButtonElement>('[data-action="help"]');
 
   if (!host || !previewElement) {
     return;
@@ -59,6 +81,17 @@ async function bootstrap(): Promise<void> {
 
   const appWindow = getCurrentWindow();
   const store = await loadSettingsStore();
+
+  const zoomController = createZoomController(previewElement, (level) => {
+    if (zoomLevelDisplay) {
+      updateLevelDisplay(zoomLevelDisplay, level);
+    }
+  });
+
+  setupZoomControls(zoomController, zoomInBtn, zoomOutBtn, zoomResetBtn, zoomLevelDisplay);
+  if (previewPane) {
+    setupWheelZoom(previewPane, zoomController);
+  }
 
   if (store) {
     await setupWindowPersistence(store, appWindow, WINDOW_PERSIST_DELAY);
@@ -86,6 +119,7 @@ async function bootstrap(): Promise<void> {
     },
     onRenderSuccess() {
       status.success('Preview updated successfully');
+      zoomController.applyZoom();
     },
     onRenderEmpty() {
       status.info('Waiting for Mermaid markup...');
@@ -110,7 +144,30 @@ async function bootstrap(): Promise<void> {
     updateFileStatus();
   };
 
-  const editor = createEditor(host, DEFAULT_SNIPPET, schedulePreviewRender, handleDocChange);
+  const { extension: zoomExtension, compartment: zoomCompartment } = createEditorZoomExtension();
+  const editor = createEditor(
+    host,
+    DEFAULT_SNIPPET,
+    schedulePreviewRender,
+    handleDocChange,
+    zoomExtension
+  );
+
+  const savedEditorZoom = store ? await loadEditorZoom(store) : null;
+  const editorZoomController = createEditorZoomController(
+    editor,
+    zoomCompartment,
+    (level) => {
+      if (store) {
+        saveEditorZoom(store, level);
+      }
+    },
+    savedEditorZoom ?? undefined
+  );
+  editor.dispatch({
+    effects: StateEffect.appendConfig.of(createEditorZoomKeymap(editorZoomController)),
+  });
+
   commitDocument(editor.state.doc.toString());
 
   editor.focus();
@@ -154,30 +211,39 @@ async function bootstrap(): Promise<void> {
     openButton,
     saveButton,
   });
+
+  setupHelpDialog(helpButton);
 }
 
 function createEditor(
   host: HTMLElement,
   initialDoc: string,
   schedulePreviewRender: (doc: string) => void,
-  onDocChange?: (doc: string) => void
+  onDocChange?: (doc: string) => void,
+  zoomExtension?: ReturnType<Compartment['of']>
 ): EditorView {
+  const extensions = [
+    basicSetup,
+    MERMAID_LANGUAGE,
+    EditorView.lineWrapping,
+    EDITOR_THEME,
+    keymap.of([indentWithTab]),
+    EditorView.updateListener.of((update) => {
+      if (update.docChanged) {
+        const nextDoc = update.state.doc.toString();
+        schedulePreviewRender(nextDoc);
+        onDocChange?.(nextDoc);
+      }
+    }),
+  ];
+
+  if (zoomExtension) {
+    extensions.push(zoomExtension);
+  }
+
   const state = EditorState.create({
     doc: initialDoc,
-    extensions: [
-      basicSetup,
-      MERMAID_LANGUAGE,
-      EditorView.lineWrapping,
-      EDITOR_THEME,
-      keymap.of([indentWithTab]),
-      EditorView.updateListener.of((update) => {
-        if (update.docChanged) {
-          const nextDoc = update.state.doc.toString();
-          schedulePreviewRender(nextDoc);
-          onDocChange?.(nextDoc);
-        }
-      }),
-    ],
+    extensions,
   });
 
   return new EditorView({

@@ -1,7 +1,7 @@
 {
   "name": "mermaidjs-desktop-client",
-  "version": "2.1.0",
-  "description": "A Tauri desktop editor for Mermaid diagrams with live preview and export tooling.",
+  "version": "2.3.0",
+  "description": "Desktop editor for Mermaid diagrams with real-time preview, syntax highlighting, and SVG/PNG export.",
   "homepage": "https://github.com/skydiver/mermaidjs-desktop-client",
   "repository": {
     "type": "git",
@@ -31,6 +31,7 @@
     "@tauri-apps/api": "^2.9.0",
     "@tauri-apps/plugin-dialog": "^2.4.2",
     "@tauri-apps/plugin-fs": "^2.4.4",
+    "@tauri-apps/plugin-shell": "^2.3.3",
     "@tauri-apps/plugin-store": "^2.4.1",
     "codemirror": "^6.0.2",
     "mermaid": "^11.12.1",
