@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use tauri::{Manager, PhysicalPosition, PhysicalSize, Size};
+use tauri::{Manager, PhysicalPosition, PhysicalSize, Size, WindowEvent};
 use tauri_plugin_store::StoreBuilder;
 
 const SETTINGS_STORE_NAME: &str = "settings.store";
@@ -65,6 +65,12 @@ pub fn run() {
             }
 
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { .. } = event {
+                // Exit the app when the main window is closed
+                window.app_handle().exit(0);
+            }
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
