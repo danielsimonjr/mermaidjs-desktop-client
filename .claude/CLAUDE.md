@@ -3,7 +3,7 @@
 Cross-platform desktop application for creating, editing, and exporting Mermaid diagrams.
 
 **Repository**: https://github.com/skydiver/mermaidjs-desktop-client
-**Version**: 2.3.1
+**Version**: 2.4.0
 **License**: MIT
 
 ## Technology Stack
@@ -203,6 +203,6 @@ a Node debugger (e.g., `chrome://inspect` in Chromium, or VS Code).
 
 The original app used Tauri 2 with a tiny Rust backend (`src-tauri/`) and the
 `@tauri-apps/plugin-{dialog,fs,shell,store}` packages. That backend was
-replaced with Electron as of v2.3.1+. The renderer API shape was preserved —
+replaced with Electron as of v2.4.0. The renderer API shape was preserved —
 most files only changed their imports from `@tauri-apps/*` to calls on
 `window.api.*`. See `electron/main.ts` header comments for the mapping rules.

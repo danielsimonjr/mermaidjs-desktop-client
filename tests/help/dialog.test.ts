@@ -20,7 +20,7 @@ describe('setupHelpDialog', () => {
     const dialog = document.querySelector('.help-dialog');
     expect(dialog).toBeTruthy();
     expect(dialog?.textContent).toContain('MermaidJS Desktop');
-    expect(dialog?.textContent).toContain('v2.3.1');
+    expect(dialog?.textContent).toContain('v2.4.0');
   });
 
   it('reuses the dialog on subsequent clicks (does not recreate)', async () => {

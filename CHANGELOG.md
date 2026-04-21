@@ -75,10 +75,30 @@ new preload.
 - Window close no longer leaves a zombie process on Windows (carried over
   from the `88f1c17` fix; still relevant post-refactor).
 
+### Performance
+
+- **Installer shrunk ~29%** and **`app.asar` shrunk ~94%** by reclassifying
+  renderer-only dependencies (`mermaid`, `codemirror`, `@codemirror/*`,
+  `remixicon`) as `devDependencies`. They're already bundled into
+  `dist/assets/` by Vite, so shipping them again as `node_modules` inside
+  the asar was double-packing. Only `electron-squirrel-startup` — the one
+  module required at main-process runtime — remains in `dependencies`.
+- **Startup: `app.asar` 141 MB → 8 MB.** Electron mmaps the asar at launch
+  and consults its file index on every `require()`; a 17× smaller asar
+  with ~6 entries measurably shortens cold start.
+- **Locale pakfiles trimmed.** A new `scripts/after-pack.js` hook (wired in
+  via `electron-builder.yml::afterPack`) removes every `locales/*.pak`
+  except `en-US.pak` — the app UI is English-only, so the other 54 files
+  (~41 MB) were dead weight for both installer size and first-launch
+  scanning.
+- `npm run package` now runs `npm run clean` first, so stale prior-version
+  installers don't accumulate in `release/`.
+
 ### Internal
 
-- `.gitignore` now excludes `dist-electron/`, `release/`, `coverage/`, and
-  `build/`.
+- `.gitignore` now excludes `dist-electron/`, `release/`, and `coverage/`
+  (note: `build/` is kept tracked — it's the electron-builder resources
+  directory holding icon assets).
 - Biome config externalized to `biome.jsonc`.
 - `.claude/CLAUDE.md` rewritten to describe the Electron architecture, IPC
   contract, and feature-addition checklist.

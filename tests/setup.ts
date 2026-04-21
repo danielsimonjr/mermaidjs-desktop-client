@@ -41,7 +41,7 @@ function makeApiMock() {
   return {
     app: {
       getName: vi.fn(async () => 'MermaidJS Desktop'),
-      getVersion: vi.fn(async () => '2.3.1'),
+      getVersion: vi.fn(async () => '2.4.0'),
     },
     shell: {
       open: vi.fn(async () => {}),

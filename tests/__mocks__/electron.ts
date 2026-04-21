@@ -89,7 +89,7 @@ class AppFake extends EventEmitter {
   }
 
   getName = vi.fn(() => 'MermaidJS Desktop');
-  getVersion = vi.fn(() => '2.3.1');
+  getVersion = vi.fn(() => '2.4.0');
   getPath = vi.fn((key: string) => {
     if (key === 'userData') return `/tmp/mermaidjs-test-userdata`;
     return `/tmp/mermaidjs-test-${key}`;

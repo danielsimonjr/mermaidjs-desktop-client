@@ -51,6 +51,10 @@ linux:
   category: Development
   # icon: build/icon.png
 
+# Strip unused Electron locale pakfiles to keep the installer lean and
+# shorten the file-scanning cost at first launch. The app UI is English-only.
+afterPack: ./scripts/after-pack.js
+
 # Skip re-signing and notarization by default — set CSC_LINK / APPLE_ID etc.
 # in your environment to enable them for releases.
 publish: null

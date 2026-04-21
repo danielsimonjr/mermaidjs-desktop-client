@@ -292,7 +292,7 @@ describe('electron main — IPC handlers', () => {
 
   it('app:getVersion returns app.getVersion()', async () => {
     await bootMain();
-    expect(await invoke(IPC_CHANNELS.app.getVersion)).toBe('2.3.1');
+    expect(await invoke(IPC_CHANNELS.app.getVersion)).toBe('2.4.0');
   });
 
   it('shell:open forwards to shell.openExternal', async () => {

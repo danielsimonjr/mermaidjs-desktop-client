@@ -21,7 +21,7 @@
     "build": "npm run build:renderer && npm run build:electron",
     "build:renderer": "tsc && vite build",
     "build:electron": "tsc -p electron/tsconfig.json",
-    "package": "npm run build && electron-builder",
+    "package": "npm run clean && npm run build && electron-builder",
     "clean": "rimraf dist dist-electron release",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
@@ -32,23 +32,23 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "electron-squirrel-startup": "^1.0.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.10",
     "@codemirror/commands": "^6.10.1",
     "@codemirror/language": "^6.12.1",
     "@codemirror/state": "^6.5.3",
     "@codemirror/view": "^6.39.7",
-    "codemirror": "^6.0.2",
-    "electron-squirrel-startup": "^1.0.1",
-    "mermaid": "^11.12.2",
-    "remixicon": "^4.7.0"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.3.10",
     "@types/node": "^25.0.3",
     "@vitest/coverage-v8": "^4.1.4",
+    "codemirror": "^6.0.2",
     "concurrently": "^9.1.0",
     "electron": "^35.0.0",
     "electron-builder": "^25.1.8",
     "happy-dom": "^20.9.0",
+    "mermaid": "^11.12.2",
+    "remixicon": "^4.7.0",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3",
     "vite": "^7.3.0",

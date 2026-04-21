@@ -13,8 +13,8 @@ dist-electron
 dist-ssr
 *.local
 
-# Build + test output
-build
+# Test + packaging output (note: build/ is NOT here — it holds source icon
+# assets referenced by electron-builder.yml, see directories.buildResources).
 coverage
 release
 
