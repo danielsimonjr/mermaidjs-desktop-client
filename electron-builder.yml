@@ -1,0 +1,56 @@
+appId: dev.skydiver.mermaidjs-desktop
+productName: MermaidJS Desktop
+directories:
+  output: release
+  buildResources: build
+
+# Only ship what the app actually needs at runtime: compiled main, compiled
+# renderer, and the real (not dev) dependencies declared in package.json.
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+
+# Main process entry — matches package.json "main".
+# (electron-builder auto-detects but making it explicit is safer.)
+extraMetadata:
+  main: dist-electron/main.js
+
+# Icon: a single 1024×1024 PNG + a multi-res Windows ICO. electron-builder
+# derives the mac/linux variants automatically on build.
+icon: build/icon.png
+
+win:
+  target:
+    # squirrel = the installer format used by VSCode/Discord/Slack/Teams.
+    # Produces `<productName>Setup.exe` + RELEASES + .nupkg. Installs
+    # per-user to %LOCALAPPDATA%\MermaidJSDesktop and supports auto-update.
+    - target: squirrel
+      arch:
+        - x64
+  icon: build/icon.ico
+
+squirrelWindows:
+  # Installs per-user to %LOCALAPPDATA%\<productName>. Skipping loadingGif —
+  # squirrel shows nothing during its brief unpack, so it's not needed.
+  iconUrl: "https://raw.githubusercontent.com/danielsimonjr/mermaidjs-desktop-client/master/build/icon.ico"
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  category: public.app-category.developer-tools
+  # icon: build/icon.icns
+
+linux:
+  target:
+    - target: AppImage
+    - target: deb
+  category: Development
+  # icon: build/icon.png
+
+# Skip re-signing and notarization by default — set CSC_LINK / APPLE_ID etc.
+# in your environment to enable them for releases.
+publish: null

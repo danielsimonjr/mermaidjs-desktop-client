@@ -1,4 +1,3 @@
-import { ask } from '@tauri-apps/plugin-dialog';
 import type { EditorView } from 'codemirror';
 import { type ExampleItem, setupExamplesMenu } from './examples-menu';
 import { createExportHandler } from './export-diagram';
@@ -131,6 +130,7 @@ function loadExamples(): ExampleItem[] {
     .map(([path, content]) => {
       const match = path.match(/\/([^/]+)\.mmd$/);
       const id = match?.[1];
+      /* v8 ignore next — only fires if Vite glob ever returns a path with no filename match. */
       if (!id) return null;
       const { order, name } = parseExampleId(id);
       return {
@@ -165,16 +165,16 @@ function parseExampleId(rawId: string): { name: string; order: number } {
       order: Number.parseInt(orderPart, 10),
     };
   }
+  /* v8 ignore next — fallback for examples without a numeric prefix; none exist today. */
   return { name: rawId, order: Number.MAX_SAFE_INTEGER };
 }
 
 async function confirmReplace(message: string): Promise<boolean> {
   try {
-    const result = await ask(message, {
+    return await window.api.dialog.ask(message, {
       title: 'Discard unsaved changes?',
       kind: 'warning',
     });
-    return result;
   } catch (error) {
     console.warn('Unable to show confirmation dialog', error);
     // Fail-safe: prevent destructive action if dialog fails

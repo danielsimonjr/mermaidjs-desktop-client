@@ -3,178 +3,305 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; script-src 'self'"
+    />
     <title>MermaidJS Desktop</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
 
   <body>
-    <div class="app-shell">
-      <header class="app-header" role="banner">
-        <div class="toolbar">
-          <div class="toolbar-left">
-            <button
-              type="button"
-              class="toolbar-button icon-button"
-              aria-label="New diagram"
-              data-action="new-diagram"
-              data-tooltip="New diagram"
-            >
-              <i class="ri-file-add-line" aria-hidden="true"></i>
-            </button>
-            <button
-              type="button"
-              class="toolbar-button icon-button"
-              aria-label="Open diagram"
-              data-action="open-diagram"
-              data-tooltip="Open…"
-            >
-              <i class="ri-folder-open-line" aria-hidden="true"></i>
-            </button>
-            <button
-              type="button"
-              class="toolbar-button icon-button"
-              aria-label="Save diagram"
-              data-action="save-diagram"
-              data-tooltip="Save"
-            >
-              <i class="ri-save-3-line" aria-hidden="true"></i>
-            </button>
-          </div>
-          <div class="toolbar-right">
-            <div class="toolbar-dropdown" data-dropdown="examples">
-              <button
-                type="button"
-                class="toolbar-button dropdown-button"
-                aria-label="Insert example diagram"
-                aria-haspopup="true"
-                aria-expanded="false"
-                data-action="examples-menu"
-                data-tooltip="Examples"
-              >
-                <i class="ri-book-open-line icon-primary" aria-hidden="true"></i>
-                <i class="ri-arrow-down-s-line icon-arrow" aria-hidden="true"></i>
-              </button>
-              <div
-                class="toolbar-menu"
-                role="menu"
-                aria-label="Example diagrams"
-                hidden
-                data-menu="examples"
-              ></div>
-            </div>
-            <div class="toolbar-dropdown" data-dropdown="export">
-              <button
-                type="button"
-                class="toolbar-button dropdown-button"
-                aria-label="Export diagram"
-                aria-haspopup="true"
-                aria-expanded="false"
-                data-action="export-menu"
-                data-tooltip="Export"
-              >
-                <i class="ri-download-2-line icon-primary" aria-hidden="true"></i>
-                <i class="ri-arrow-down-s-line icon-arrow" aria-hidden="true"></i>
-              </button>
-              <div class="toolbar-menu" role="menu" aria-label="Export options" hidden>
-                <button type="button" class="toolbar-menu-item" role="menuitem" data-export="png">
-                  Export as PNG
-                </button>
-                <button type="button" class="toolbar-menu-item" role="menuitem" data-export="pngx2">
-                  Export as PNG ×2
-                </button>
-                <button type="button" class="toolbar-menu-item" role="menuitem" data-export="svg">
-                  Export as SVG
-                </button>
-              </div>
-            </div>
-            <button
-              type="button"
-              class="toolbar-button icon-button"
-              aria-label="Help"
-              data-action="help"
-              data-tooltip="Help"
-            >
-              <i class="ri-question-line" aria-hidden="true"></i>
-            </button>
-          </div>
+    <div class="app-shell" data-outline-open="false">
+      <!-- ============================================================
+           Activity bar (left vertical rail)
+           ============================================================ -->
+      <nav class="activity-bar" role="toolbar" aria-label="Primary actions">
+        <div class="activity-group">
+          <button
+            type="button"
+            class="activity-button"
+            aria-label="New diagram (Ctrl+N)"
+            data-action="new-diagram"
+            data-tooltip="New diagram"
+          >
+            <i class="ri-file-add-line" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="activity-button"
+            aria-label="Open diagram (Ctrl+O)"
+            aria-haspopup="true"
+            aria-expanded="false"
+            data-action="open-menu"
+            data-tooltip="Open / Recent"
+          >
+            <i class="ri-folder-open-line" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="activity-button"
+            aria-label="Save diagram (Ctrl+S)"
+            data-action="save-diagram"
+            data-tooltip="Save"
+          >
+            <i class="ri-save-3-line" aria-hidden="true"></i>
+          </button>
         </div>
-      </header>
 
-      <main class="app-main">
-        <div class="workspace">
-          <section class="panel editor-panel" data-pane="editor">
-            <div
-              id="editor-host"
-              class="editor-host"
-              role="textbox"
-              aria-label="Mermaid source editor"
-            >
-              <noscript>
-                <textarea class="editor-fallback" spellcheck="false">
+        <div class="activity-group">
+          <button
+            type="button"
+            class="activity-button"
+            aria-label="Toggle outline sidebar"
+            aria-pressed="false"
+            data-action="toggle-outline"
+            data-tooltip="Outline"
+          >
+            <i class="ri-list-unordered" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="activity-button"
+            aria-label="Insert example diagram"
+            aria-haspopup="true"
+            aria-expanded="false"
+            data-action="examples-menu"
+            data-tooltip="Examples"
+          >
+            <i class="ri-book-open-line" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="activity-button"
+            aria-label="Export diagram"
+            aria-haspopup="true"
+            aria-expanded="false"
+            data-action="export-menu"
+            data-tooltip="Export"
+          >
+            <i class="ri-download-2-line" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="activity-button"
+            aria-label="Mermaid theme"
+            aria-haspopup="true"
+            aria-expanded="false"
+            data-action="theme-menu"
+            data-tooltip="Diagram theme"
+          >
+            <i class="ri-palette-line" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="activity-group">
+          <button
+            type="button"
+            class="activity-button"
+            aria-label="Command palette (Ctrl+K)"
+            data-action="command-palette"
+            data-tooltip="Command palette"
+          >
+            <i class="ri-command-line" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="activity-button"
+            aria-label="Help (F1)"
+            data-action="help"
+            data-tooltip="Help"
+          >
+            <i class="ri-question-line" aria-hidden="true"></i>
+          </button>
+        </div>
+      </nav>
+
+      <!-- ============================================================
+           Outline sidebar (hidden by default)
+           ============================================================ -->
+      <aside class="outline-sidebar" aria-label="Diagram outline">
+        <div class="outline-header">
+          <i class="ri-list-unordered" aria-hidden="true"></i>
+          <span>Outline</span>
+        </div>
+        <ul class="outline-list" data-outline-list role="tree"></ul>
+      </aside>
+
+      <!-- ============================================================
+           Workspace
+           ============================================================ -->
+      <main class="workspace">
+        <section class="panel editor-panel" data-pane="editor">
+          <div class="panel-header">
+            <div class="panel-header-title">
+              <i class="ri-edit-2-line" aria-hidden="true"></i>
+              <span>Editor</span>
+            </div>
+          </div>
+          <div
+            id="editor-host"
+            class="editor-host"
+            role="textbox"
+            aria-label="Mermaid source editor"
+          >
+            <noscript>
+              <textarea class="editor-fallback" spellcheck="false">
 graph TD
     A[Start] --> B{Is it working?}
     B -- Yes --> C[Great!]
     B -- Not yet --> D[Keep iterating]</textarea
-              >
-              </noscript>
-            </div>
-          </section>
-          <div class="divider" role="separator" aria-orientation="vertical"></div>
-          <section class="panel preview-panel" data-pane="preview">
-            <div class="zoom-controls">
-              <button
-                type="button"
-                class="zoom-button"
-                aria-label="Zoom out"
-                data-action="zoom-out"
-              >
-                <i class="ri-subtract-line" aria-hidden="true"></i>
-              </button>
-              <span class="zoom-level" data-zoom-level>100%</span>
-              <button
-                type="button"
-                class="zoom-button"
-                aria-label="Zoom in"
-                data-action="zoom-in"
-              >
-                <i class="ri-add-line" aria-hidden="true"></i>
-              </button>
-              <button
-                type="button"
-                class="zoom-button"
-                aria-label="Reset zoom"
-                data-action="zoom-reset"
-              >
-                <i class="ri-refresh-line" aria-hidden="true"></i>
-              </button>
-            </div>
-            <div
-              id="preview-host"
-              class="preview-host preview-empty"
-              aria-live="polite"
-              role="status"
             >
-              <p class="preview-message">Rendered diagram will appear here.</p>
+            </noscript>
+          </div>
+        </section>
+        <div class="divider" role="separator" aria-orientation="vertical"></div>
+        <section class="panel preview-panel" data-pane="preview">
+          <div class="panel-header">
+            <div class="panel-header-title">
+              <i class="ri-eye-line" aria-hidden="true"></i>
+              <span>Preview</span>
             </div>
-          </section>
-        </div>
+            <div class="panel-header-actions">
+              <button
+                type="button"
+                class="panel-action"
+                aria-label="Copy SVG source"
+                data-action="copy-svg"
+                data-tooltip="Copy SVG"
+              >
+                <i class="ri-file-copy-line" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+          <div class="zoom-controls">
+            <button
+              type="button"
+              class="zoom-button"
+              aria-label="Zoom out"
+              data-action="zoom-out"
+            >
+              <i class="ri-subtract-line" aria-hidden="true"></i>
+            </button>
+            <span class="zoom-level" data-zoom-level>100%</span>
+            <button
+              type="button"
+              class="zoom-button"
+              aria-label="Zoom in"
+              data-action="zoom-in"
+            >
+              <i class="ri-add-line" aria-hidden="true"></i>
+            </button>
+            <button
+              type="button"
+              class="zoom-button"
+              aria-label="Reset zoom"
+              data-action="zoom-reset"
+            >
+              <i class="ri-refresh-line" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div
+            id="preview-host"
+            class="preview-host preview-empty"
+            aria-live="polite"
+            role="status"
+          >
+            <p class="preview-message">Rendered diagram will appear here.</p>
+          </div>
+        </section>
       </main>
 
+      <!-- ============================================================
+           Footer (single-line status strip)
+           ============================================================ -->
       <footer class="app-footer" role="status">
-        <div class="status-section">
-          <span class="status-label">Status:</span>
-          <span class="status-message" data-status="message" data-status-level="idle">
+        <span class="footer-item" data-status="file" data-dirty="false">
+          <span class="dirty-dot" aria-hidden="true"></span>
+          <span data-status-file>Untitled</span>
+        </span>
+        <span class="footer-item footer-spacer">
+          <span
+            class="status-message"
+            data-status="message"
+            data-status-level="idle"
+          >
             Standing by
           </span>
-        </div>
-        <div class="status-section">
-          <span class="status-label">File:</span>
-          <span class="status-file" data-status="file" data-dirty="false">
-            Untitled - Not saved yet
-          </span>
-        </div>
+        </span>
+        <span class="footer-item" data-status-counter>
+          <i class="ri-text" aria-hidden="true"></i>
+          <span data-counter>Ln 1, Col 1 · 0 chars</span>
+        </span>
       </footer>
     </div>
+
+    <!-- Open / recent-files menu (dynamically positioned) -->
+    <div
+      class="activity-dropdown-menu"
+      role="menu"
+      aria-label="Open & recent files"
+      hidden
+      data-menu="open"
+    ></div>
+
+    <!-- Examples menu -->
+    <div
+      class="activity-dropdown-menu"
+      role="menu"
+      aria-label="Example diagrams"
+      hidden
+      data-menu="examples"
+    ></div>
+
+    <!-- Export menu -->
+    <div
+      class="activity-dropdown-menu"
+      role="menu"
+      aria-label="Export options"
+      hidden
+      data-menu="export"
+    >
+      <button type="button" class="toolbar-menu-item" role="menuitem" data-export="png">
+        <i class="ri-image-line menu-item-icon" aria-hidden="true"></i>
+        Export as PNG
+      </button>
+      <button type="button" class="toolbar-menu-item" role="menuitem" data-export="pngx2">
+        <i class="ri-image-2-line menu-item-icon" aria-hidden="true"></i>
+        Export as PNG ×2
+      </button>
+      <button type="button" class="toolbar-menu-item" role="menuitem" data-export="svg">
+        <i class="ri-code-s-slash-line menu-item-icon" aria-hidden="true"></i>
+        Export as SVG
+      </button>
+    </div>
+
+    <!-- Theme menu -->
+    <div
+      class="activity-dropdown-menu"
+      role="menu"
+      aria-label="Diagram theme"
+      hidden
+      data-menu="theme"
+    >
+      <button type="button" class="toolbar-menu-item" role="menuitem" data-theme="default">
+        <i class="ri-contrast-line menu-item-icon" aria-hidden="true"></i>
+        Default
+      </button>
+      <button type="button" class="toolbar-menu-item" role="menuitem" data-theme="dark">
+        <i class="ri-moon-line menu-item-icon" aria-hidden="true"></i>
+        Dark
+      </button>
+      <button type="button" class="toolbar-menu-item" role="menuitem" data-theme="forest">
+        <i class="ri-leaf-line menu-item-icon" aria-hidden="true"></i>
+        Forest
+      </button>
+      <button type="button" class="toolbar-menu-item" role="menuitem" data-theme="neutral">
+        <i class="ri-contrast-2-line menu-item-icon" aria-hidden="true"></i>
+        Neutral
+      </button>
+    </div>
+
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

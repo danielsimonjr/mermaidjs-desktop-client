@@ -1,87 +1,53 @@
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Store } from '@tauri-apps/plugin-store';
+// Window & editor state persistence for the renderer.
+//
+// Note: window bounds (width/height/x/y/maximized) are persisted entirely in the
+// Electron main process — see electron/main.ts. This module only deals with the
+// small bits of state that the renderer itself controls (currently: editor zoom).
+//
+// The `setupWindowPersistence` export is retained as a no-op so the existing
+// call site in src/main.ts doesn't need to know the responsibility moved.
 
-import { debounce } from '../utils/debounce';
-
-const SETTINGS_STORE_NAME = 'settings.store';
-const WINDOW_STATE_KEY = 'windowState';
 const EDITOR_ZOOM_KEY = 'editorZoom';
 
-export interface WindowStatePayload {
-  width?: number;
-  height?: number;
-  x?: number;
-  y?: number;
-  maximized: boolean;
+/** Opaque handle — used only so callers can keep type-safe contracts, no real state carried. */
+export interface SettingsStoreHandle {
+  readonly ready: true;
 }
 
-export type AppWindow = ReturnType<typeof getCurrentWindow>;
-
-export async function loadSettingsStore(): Promise<Store | null> {
-  try {
-    return await Store.load(SETTINGS_STORE_NAME);
-  } catch (error) {
-    console.error('Failed to load settings store', error);
-    return null;
-  }
+export async function loadSettingsStore(): Promise<SettingsStoreHandle | null> {
+  // The store is opened eagerly in main.ts; the renderer just talks to it via IPC.
+  // Return a handle purely so downstream code can guard on "store available" the
+  // same way it did with the Tauri Store object.
+  return { ready: true };
 }
 
+/**
+ * No-op: window bounds are owned by the main process. Kept so src/main.ts doesn't
+ * need to change call-site shape and so we could revive renderer-side tracking
+ * later if something non-bounds (e.g. sidebar width) needs persistence.
+ */
 export async function setupWindowPersistence(
-  store: Store,
-  appWindow: AppWindow,
-  persistDelay: number
+  _store: SettingsStoreHandle,
+  _unused: unknown,
+  _persistDelay: number
 ): Promise<void> {
-  const debouncedPersist = debounce(() => persistWindowState(store, appWindow), persistDelay);
-
-  const unlistenResize = await appWindow.onResized(() => debouncedPersist());
-  const unlistenMove = await appWindow.onMoved(() => debouncedPersist());
-
-  await appWindow.onCloseRequested(async (event) => {
-    event.preventDefault();
-    await persistWindowState(store, appWindow);
-    if (typeof unlistenResize === 'function') unlistenResize();
-    if (typeof unlistenMove === 'function') unlistenMove();
-    await appWindow.close();
-  });
+  // intentionally empty — see electron/main.ts
 }
 
-export async function persistWindowState(store: Store, appWindow: AppWindow): Promise<void> {
+export async function loadEditorZoom(_store: SettingsStoreHandle): Promise<number | null> {
   try {
-    const [size, position, maximized] = await Promise.all([
-      appWindow.outerSize(),
-      appWindow.outerPosition(),
-      appWindow.isMaximized(),
-    ]);
-
-    const windowState: WindowStatePayload = {
-      width: size ? Math.round(size.width) : undefined,
-      height: size ? Math.round(size.height) : undefined,
-      x: position ? Math.round(position.x) : undefined,
-      y: position ? Math.round(position.y) : undefined,
-      maximized: Boolean(maximized),
-    };
-
-    await store.set(WINDOW_STATE_KEY, windowState);
-    await store.save();
-  } catch (error) {
-    console.warn('Persisting window state failed', error);
-  }
-}
-
-export async function loadEditorZoom(store: Store): Promise<number | null> {
-  try {
-    const zoom = await store.get<number>(EDITOR_ZOOM_KEY);
-    return zoom ?? null;
+    const value = await window.api.store.get<number>(EDITOR_ZOOM_KEY);
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
   } catch (error) {
     console.warn('Loading editor zoom failed', error);
     return null;
   }
 }
 
-export async function saveEditorZoom(store: Store, level: number): Promise<void> {
+export async function saveEditorZoom(_store: SettingsStoreHandle, level: number): Promise<void> {
   try {
-    await store.set(EDITOR_ZOOM_KEY, level);
-    await store.save();
+    await window.api.store.set(EDITOR_ZOOM_KEY, level);
+    // Let the main-side debouncer handle flushing; no explicit save() needed.
   } catch (error) {
     console.warn('Saving editor zoom failed', error);
   }

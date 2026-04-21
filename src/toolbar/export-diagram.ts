@@ -1,5 +1,3 @@
-import { save as showSaveDialog } from '@tauri-apps/plugin-dialog';
-import { writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import type { EditorView } from 'codemirror';
 import mermaid from 'mermaid';
 
@@ -46,7 +44,7 @@ export function createExportHandler({ editor, getPath }: ExportDiagramOptions) {
 }
 
 async function exportAsSvg(svg: string, baseName: string): Promise<void> {
-  const targetPath = await showSaveDialog({
+  const targetPath = await window.api.dialog.showSaveDialog({
     defaultPath: `${baseName}.svg`,
     filters: [
       {
@@ -61,7 +59,7 @@ async function exportAsSvg(svg: string, baseName: string): Promise<void> {
     return;
   }
 
-  await writeTextFile(targetPath, svg);
+  await window.api.fs.writeTextFile(targetPath, svg);
 }
 
 async function exportAsPng(
@@ -70,7 +68,7 @@ async function exportAsPng(
   scale: number
 ): Promise<void> {
   const suffix = scale > 1 ? '@2x' : '';
-  const targetPath = await showSaveDialog({
+  const targetPath = await window.api.dialog.showSaveDialog({
     defaultPath: `${baseName}${suffix}.png`,
     filters: [
       {
@@ -86,7 +84,7 @@ async function exportAsPng(
   }
 
   const pngBytes = await convertSvgToPng(diagram, scale);
-  await writeFile(targetPath, pngBytes);
+  await window.api.fs.writeFile(targetPath, pngBytes);
 }
 
 async function renderDiagram(source: string): Promise<RenderedDiagram> {

@@ -1,13 +1,13 @@
-import { getName, getVersion } from '@tauri-apps/api/app';
-import { open } from '@tauri-apps/plugin-shell';
-
 export function setupHelpDialog(button: HTMLButtonElement | null): void {
   if (!button) return;
 
   let dialog: HTMLDialogElement | null = null;
 
   async function createDialog(): Promise<HTMLDialogElement> {
-    const [appName, appVersion] = await Promise.all([getName(), getVersion()]);
+    const [appName, appVersion] = await Promise.all([
+      window.api.app.getName(),
+      window.api.app.getVersion(),
+    ]);
 
     const el = document.createElement('dialog');
     el.className = 'help-dialog';
@@ -86,7 +86,7 @@ export function setupHelpDialog(button: HTMLButtonElement | null): void {
       const button = event.currentTarget as HTMLButtonElement;
       const url = button.dataset.url;
       if (url) {
-        await open(url);
+        await window.api.shell.open(url);
       }
     });
 

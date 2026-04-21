@@ -26,6 +26,7 @@ export function initHorizontalResize(
   setEditorWidth(DEFAULT_EDITOR_RATIO);
 
   const onPointerMove = (event: PointerEvent) => {
+    /* v8 ignore next — unreachable in normal use (handler is only attached while dragging). */
     if (!isDragging) return;
     const delta = event.clientX - startX;
     const ratio = (startEditorWidth + delta) / containerWidth;

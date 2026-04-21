@@ -1,48 +1,51 @@
-import { save as showSaveDialog } from '@tauri-apps/plugin-dialog';
-import { writeTextFile } from '@tauri-apps/plugin-fs';
 import type { EditorView } from 'codemirror';
 
-interface SaveDiagramOptions {
+export interface SaveDiagramContext {
   editor: EditorView;
-  button: HTMLButtonElement | null;
   getPath: () => string | null;
   onPathChange: (path: string | null) => void;
   onSave?: (doc: string, path: string) => void;
 }
 
-export function setupSaveDiagramAction(options: SaveDiagramOptions): void {
-  const { editor, button, getPath, onPathChange, onSave } = options;
-  if (!button) return;
+/**
+ * Save the current editor buffer. If no current path exists, prompts the
+ * user for one. Returns the path written to (null = user cancelled / error).
+ */
+export async function saveDiagram(ctx: SaveDiagramContext): Promise<string | null> {
+  const { editor, getPath, onPathChange, onSave } = ctx;
+  const documentContent = editor.state.doc.toString();
+  let targetPath = getPath();
 
-  button.addEventListener('click', async () => {
-    const documentContent = editor.state.doc.toString();
-    let targetPath = getPath();
-
-    try {
-      if (!targetPath) {
-        const picked = await showSaveDialog({
-          defaultPath: 'diagram.mmd',
-          filters: [
-            {
-              name: 'Mermaid Diagram',
-              extensions: ['mmd', 'mermaid', 'md'],
-            },
-            { name: 'All Files', extensions: ['*'] },
-          ],
-        });
-
-        if (typeof picked === 'string') {
-          targetPath = picked;
-        } else {
-          return;
-        }
-      }
-
-      await writeTextFile(targetPath, documentContent);
-      onPathChange(targetPath);
-      onSave?.(documentContent, targetPath);
-    } catch (error) {
-      console.error('Failed to save diagram', error);
+  try {
+    if (!targetPath) {
+      const picked = await window.api.dialog.showSaveDialog({
+        defaultPath: 'diagram.mmd',
+        filters: [
+          { name: 'Mermaid Diagram', extensions: ['mmd', 'mermaid', 'md'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      });
+      if (typeof picked !== 'string') return null;
+      targetPath = picked;
     }
+    await window.api.fs.writeTextFile(targetPath, documentContent);
+    onPathChange(targetPath);
+    onSave?.(documentContent, targetPath);
+    return targetPath;
+  } catch (error) {
+    console.error('Failed to save diagram', error);
+    return null;
+  }
+}
+
+interface SaveDiagramOptions extends SaveDiagramContext {
+  button: HTMLButtonElement | null;
+}
+
+/** Backward-compatible button wiring. */
+export function setupSaveDiagramAction(options: SaveDiagramOptions): void {
+  if (!options.button) return;
+  options.button.addEventListener('click', () => {
+    void saveDiagram(options);
   });
 }
