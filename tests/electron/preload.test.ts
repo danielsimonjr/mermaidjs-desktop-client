@@ -17,6 +17,35 @@ describe('preload', () => {
     expect(Object.keys(api!).sort()).toEqual(['app', 'dialog', 'fs', 'shell', 'store']);
   });
 
+  // The preload INLINES its own copy of IPC_CHANNELS because it's loaded under
+  // sandbox: true, and a sandboxed preload cannot require('./types') — the call
+  // throws "module not found" at load time, contextBridge.exposeInMainWorld
+  // never runs, and window.api is left undefined in the renderer.
+  //
+  // This test asserts the two copies stay in lockstep. If someone adds a new
+  // channel to electron/types.ts and forgets to mirror it in electron/preload.ts,
+  // this will fail loudly with a readable diff instead of every downstream
+  // "nothing happens when I click the button" bug.
+  it('inlined preload channel strings match electron/types.ts::IPC_CHANNELS exactly', async () => {
+    const { promises: fs } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const preloadSource = await fs.readFile(
+      resolve(process.cwd(), 'electron/preload.ts'),
+      'utf8'
+    );
+    // Extract the `const IPC_CHANNELS = { ... } as const;` literal from the source.
+    const match = preloadSource.match(/const IPC_CHANNELS = (\{[\s\S]*?\}) as const;/);
+    expect(match, 'preload.ts must contain an inlined `const IPC_CHANNELS = {...} as const;`').toBeTruthy();
+    // eval-style parse: the object literal is pure JSON-like content (quoted strings + nested braces).
+    // Rewrite to valid JSON by quoting bare keys, then parse.
+    const normalized = match![1]
+      .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3')
+      .replace(/'([^']*)'/g, '"$1"')
+      .replace(/,(\s*[}\]])/g, '$1');
+    const inlined = JSON.parse(normalized);
+    expect(inlined).toEqual(IPC_CHANNELS);
+  });
+
   it('app.getName calls ipcRenderer.invoke with the correct channel', async () => {
     const electron = await import('electron');
     vi.mocked(electron.ipcRenderer.invoke).mockResolvedValueOnce('Test App');
