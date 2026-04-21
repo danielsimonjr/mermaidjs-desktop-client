@@ -146,6 +146,21 @@ function finiteOr(value: number | undefined, fallback: number): number {
 
 // ---- IPC handlers ----------------------------------------------------------
 
+/**
+ * Pick the BrowserWindow to use as a native-dialog parent. Prefers whatever
+ * has OS focus, but falls back to the module-level mainWindow. On Windows
+ * specifically, getFocusedWindow() can momentarily return null during a
+ * dropdown-close → menu-click transition; without a parent, the native file
+ * dialog has no guaranteed z-order and can land hidden behind the app
+ * window, making the toolbar appear broken.
+ */
+function dialogParent(): BrowserWindow | null {
+  const focused = BrowserWindow.getFocusedWindow();
+  if (focused && !focused.isDestroyed()) return focused;
+  if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
+  return null;
+}
+
 function registerIpc(): void {
   // App ---------------------------------------------------------------------
   ipcMain.handle(IPC_CHANNELS.app.getName, () => app.getName());
@@ -161,15 +176,18 @@ function registerIpc(): void {
   ipcMain.handle(
     IPC_CHANNELS.dialog.ask,
     async (_event, message: string, options: AskOptions = {}) => {
-      const parent = BrowserWindow.getFocusedWindow();
-      const result = await dialog.showMessageBox(parent ?? undefined!, {
-        type: options.kind ?? 'question',
+      const parent = dialogParent();
+      const opts = {
+        type: options.kind ?? ('question' as const),
         title: options.title ?? app.getName(),
         message,
         buttons: [options.okLabel ?? 'OK', options.cancelLabel ?? 'Cancel'],
         defaultId: 0,
         cancelId: 1,
-      });
+      };
+      const result = parent
+        ? await dialog.showMessageBox(parent, opts)
+        : await dialog.showMessageBox(opts);
       return result.response === 0;
     }
   );
@@ -177,17 +195,20 @@ function registerIpc(): void {
   ipcMain.handle(
     IPC_CHANNELS.dialog.showOpenDialog,
     async (_event, options: OpenDialogOptions = {}) => {
-      const parent = BrowserWindow.getFocusedWindow();
+      const parent = dialogParent();
       const properties: Array<'openFile' | 'openDirectory' | 'multiSelections'> = [];
       if (options.directory) properties.push('openDirectory');
       else properties.push('openFile');
       if (options.multiple) properties.push('multiSelections');
-      const result = await dialog.showOpenDialog(parent ?? undefined!, {
+      const opts = {
         title: options.title,
         defaultPath: options.defaultPath,
         filters: options.filters,
         properties,
-      });
+      };
+      const result = parent
+        ? await dialog.showOpenDialog(parent, opts)
+        : await dialog.showOpenDialog(opts);
       if (result.canceled) return null;
       return options.multiple ? result.filePaths : (result.filePaths[0] ?? null);
     }
@@ -196,12 +217,15 @@ function registerIpc(): void {
   ipcMain.handle(
     IPC_CHANNELS.dialog.showSaveDialog,
     async (_event, options: SaveDialogOptions = {}) => {
-      const parent = BrowserWindow.getFocusedWindow();
-      const result = await dialog.showSaveDialog(parent ?? undefined!, {
+      const parent = dialogParent();
+      const opts = {
         title: options.title,
         defaultPath: options.defaultPath,
         filters: options.filters,
-      });
+      };
+      const result = parent
+        ? await dialog.showSaveDialog(parent, opts)
+        : await dialog.showSaveDialog(opts);
       return result.canceled ? null : (result.filePath ?? null);
     }
   );
