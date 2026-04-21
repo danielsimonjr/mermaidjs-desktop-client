@@ -24,11 +24,12 @@ describe('createPreview', () => {
   }
 
   async function flush() {
-    // Advance the 300ms debounce, then drain queued microtasks.
-    vi.advanceTimersByTime(300);
+    // advanceTimersByTimeAsync interleaves timer advancement with microtask
+    // draining, which is what we need now that the debounced work chains
+    // through `await loadMermaid()` (dynamic import) before mermaid.render().
+    await vi.advanceTimersByTimeAsync(300);
     vi.useRealTimers();
-    await Promise.resolve();
-    await Promise.resolve();
+    for (let i = 0; i < 4; i++) await Promise.resolve();
     vi.useFakeTimers();
   }
 
@@ -111,10 +112,9 @@ describe('createPreview', () => {
     schedule('second');
     vi.advanceTimersByTime(300);
     vi.useRealTimers();
-    await Promise.resolve();
+    for (let i = 0; i < 3; i++) await Promise.resolve();
     resolveFirst({ svg: '<svg>STALE</svg>', diagramType: 'flowchart' });
-    await Promise.resolve();
-    await Promise.resolve();
+    for (let i = 0; i < 6; i++) await Promise.resolve();
     vi.useFakeTimers();
     // The stale first render must not overwrite the second.
     expect(el.innerHTML).not.toContain('STALE');

@@ -1,6 +1,5 @@
-import mermaid from 'mermaid';
-
 import { debounce } from '../utils/debounce';
+import { loadMermaid } from './mermaid-loader';
 
 export type PreviewScheduler = (doc: string) => void;
 
@@ -29,6 +28,7 @@ export function createPreview(
 
     const sandbox = createRenderSandbox(previewEl);
     try {
+      const mermaid = await loadMermaid();
       const renderId = `mermaid-${Date.now()}-${token}`;
       const { svg } = await mermaid.render(renderId, trimmed, sandbox);
       if (token !== latestToken) return;

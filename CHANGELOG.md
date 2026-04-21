@@ -93,6 +93,23 @@ new preload.
   scanning.
 - `npm run package` now runs `npm run clean` first, so stale prior-version
   installers don't accumulate in `release/`.
+- **Renderer cold-start: initial bundle 1,030 kB → 430 kB (−58%).** Mermaid
+  is now dynamic-imported (`src/preview/mermaid-loader.ts`) so the ~600 kB
+  library doesn't parse/compile during window boot; it loads on first
+  render, theme apply, or export. The memoized loader means concurrent
+  callers share one import and subsequent calls are instant.
+- **Main process: `settingsStore.load()` runs in parallel with
+  `BrowserWindow` construction** instead of serially. Bounds are applied
+  via `setBounds` once the read resolves, before `ready-to-show`, so there
+  is no visible geometry flash. Shaves whichever of `loadSettings` /
+  `spawnRenderer` finishes first off cold start.
+
+### Documentation
+
+- README gains a **Code signing** section describing the `CSC_LINK` /
+  `CSC_KEY_PASSWORD` env-var workflow for Windows Authenticode and the
+  `APPLE_*` env vars for macOS Developer ID + notarization. The build
+  remains unsigned by default.
 
 ### Internal
 

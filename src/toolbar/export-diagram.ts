@@ -1,6 +1,6 @@
 import type { EditorView } from 'codemirror';
-import mermaid from 'mermaid';
 
+import { loadMermaid } from '../preview/mermaid-loader';
 import type { ExportFormat } from './export-menu';
 
 interface ExportDiagramOptions {
@@ -99,6 +99,7 @@ async function renderDiagram(source: string): Promise<RenderedDiagram> {
   document.body.appendChild(container);
 
   try {
+    const mermaid = await loadMermaid();
     const { svg } = await mermaid.render(renderId, source, container);
     let svgElement = container.querySelector('svg');
 

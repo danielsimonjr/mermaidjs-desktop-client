@@ -40,11 +40,14 @@ async function bootMain() {
   await import('../../electron/main');
   const electron = await import('electron');
   await electron.app.whenReady();
-  // createMainWindow runs inside `whenReady().then(async () => ...)` — we need to
-  // poll for it to finish because we don't have a handle on that outer promise.
-  for (let i = 0; i < 50; i++) {
+  // createMainWindow now runs settings-load concurrently with BrowserWindow
+  // construction, so the window exists before setBounds / event listeners /
+  // loadURL have been applied. Poll for loadURL — the last thing the flow
+  // does — so the tests see a fully-wired window.
+  for (let i = 0; i < 100; i++) {
     // @ts-expect-error — static on fake
-    if (electron.BrowserWindow.instances.length > 0) break;
+    const win = electron.BrowserWindow.instances[0];
+    if (win && vi.mocked(win.loadURL).mock.calls.length > 0) break;
     await new Promise((r) => setTimeout(r, 10));
   }
   return electron;
@@ -84,11 +87,13 @@ describe('electron main — lifecycle', () => {
     const electron = await bootMain();
     // @ts-expect-error
     const win = electron.BrowserWindow.instances[0]!;
-    // Creation args passed through to constructor.
-    expect(win.options.width).toBe(1200);
-    expect(win.options.height).toBe(800);
-    expect(win.options.x).toBe(100);
-    expect(win.options.y).toBe(50);
+    // Bounds are applied via setBounds post-construction (settings read runs
+    // concurrently with the BrowserWindow ctor for faster cold start).
+    const bounds = win.getBounds();
+    expect(bounds.width).toBe(1200);
+    expect(bounds.height).toBe(800);
+    expect(bounds.x).toBe(100);
+    expect(bounds.y).toBe(50);
   });
 
   it('restores maximized state when saved', async () => {
@@ -106,8 +111,9 @@ describe('electron main — lifecycle', () => {
     const electron = await bootMain();
     // @ts-expect-error
     const win = electron.BrowserWindow.instances[0]!;
-    expect(win.options.width).toBe(800);
-    expect(win.options.height).toBe(600);
+    const bounds = win.getBounds();
+    expect(bounds.width).toBe(800);
+    expect(bounds.height).toBe(600);
   });
 
   it('ignores non-finite saved dimensions (finiteOr fallback)', async () => {
@@ -118,7 +124,7 @@ describe('electron main — lifecycle', () => {
     const electron = await bootMain();
     // @ts-expect-error
     const win = electron.BrowserWindow.instances[0]!;
-    expect(win.options.width).toBe(800); // default fallback
+    expect(win.getBounds().width).toBe(800); // default fallback
   });
 
   it('shows and focuses the window on ready-to-show', async () => {

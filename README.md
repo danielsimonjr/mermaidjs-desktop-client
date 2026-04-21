@@ -78,6 +78,38 @@ npm run package
 
 Installer output lands in `release/`.
 
+### Code signing
+
+By default builds are unsigned — `electron-builder` logs
+`no signing info identified, signing is skipped` and Windows will show a
+SmartScreen "unrecognized app" warning on install. To sign:
+
+**Windows** (Authenticode):
+
+```bash
+CSC_LINK=/path/to/cert.pfx \
+CSC_KEY_PASSWORD=your-password \
+npm run package
+```
+
+`CSC_LINK` can be an absolute path or a `file:` / `https:` URL;
+`electron-builder` auto-detects `.pfx`/`.p12` and signs every executable
+(the app, `Update.exe`, the Squirrel stub, and the Setup).
+
+**macOS** (Developer ID + notarization):
+
+```bash
+CSC_LINK=/path/to/cert.p12 \
+CSC_KEY_PASSWORD=your-password \
+APPLE_ID=you@example.com \
+APPLE_APP_SPECIFIC_PASSWORD=app-specific-pwd \
+APPLE_TEAM_ID=TEAMID \
+npm run package
+```
+
+See [`electron-builder` code signing docs](https://www.electron.build/code-signing)
+for the full option surface.
+
 ## Tooling
 
 - `npm run clean` — Remove build artifacts (`dist/`, `dist-electron/`, `release/`)

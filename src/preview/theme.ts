@@ -2,7 +2,7 @@
 // triggers a preview re-render. Persisted via window.api.store so the
 // choice survives restarts.
 
-import mermaid from 'mermaid';
+import { loadMermaid } from './mermaid-loader';
 
 export type MermaidTheme = 'default' | 'dark' | 'forest' | 'neutral';
 
@@ -23,7 +23,8 @@ export function createMermaidTheme(
 ): MermaidThemeController {
   let current: MermaidTheme = defaultTheme;
 
-  function applyToMermaid(theme: MermaidTheme): void {
+  async function applyToMermaid(theme: MermaidTheme): Promise<void> {
+    const mermaid = await loadMermaid();
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
@@ -40,14 +41,14 @@ export function createMermaidTheme(
     } catch (err) {
       console.warn('mermaid-theme: read failed', err);
     }
-    applyToMermaid(current);
+    await applyToMermaid(current);
     return current;
   }
 
   async function set(theme: MermaidTheme): Promise<void> {
     if (!(VALID_THEMES as readonly string[]).includes(theme)) return;
     current = theme;
-    applyToMermaid(theme);
+    await applyToMermaid(theme);
     try {
       await window.api.store.set(STORE_KEY, theme);
     } catch (err) {

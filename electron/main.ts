@@ -48,17 +48,16 @@ const DEFAULT_WINDOW_SIZE = { width: 800, height: 600 } as const;
 let mainWindow: BrowserWindow | null = null;
 
 async function createMainWindow(): Promise<void> {
-  await settingsStore.load();
-  const saved = settingsStore.get<SavedWindowState>(WINDOW_STATE_KEY) ?? {};
-
-  const width = finiteOr(saved.width, DEFAULT_WINDOW_SIZE.width);
-  const height = finiteOr(saved.height, DEFAULT_WINDOW_SIZE.height);
+  // Kick off the settings read concurrently with the BrowserWindow ctor.
+  // Both are the slow parts of boot (disk read + spawning the renderer
+  // process); running them in parallel shaves whichever finishes first
+  // off cold start. show=false means the user never sees the default
+  // geometry flash before setBounds applies the saved one.
+  const settingsPromise = settingsStore.load();
 
   mainWindow = new BrowserWindow({
-    width,
-    height,
-    x: saved.x,
-    y: saved.y,
+    width: DEFAULT_WINDOW_SIZE.width,
+    height: DEFAULT_WINDOW_SIZE.height,
     show: false, // show after 'ready-to-show' to avoid white flash
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
@@ -68,6 +67,17 @@ async function createMainWindow(): Promise<void> {
     },
   });
 
+  await settingsPromise;
+  const saved = settingsStore.get<SavedWindowState>(WINDOW_STATE_KEY) ?? {};
+  const width = finiteOr(saved.width, DEFAULT_WINDOW_SIZE.width);
+  const height = finiteOr(saved.height, DEFAULT_WINDOW_SIZE.height);
+
+  const nextBounds: { x?: number; y?: number; width: number; height: number } = { width, height };
+  if (typeof saved.x === 'number' && typeof saved.y === 'number') {
+    nextBounds.x = saved.x;
+    nextBounds.y = saved.y;
+  }
+  mainWindow.setBounds(nextBounds);
   if (saved.maximized) {
     mainWindow.maximize();
   }
