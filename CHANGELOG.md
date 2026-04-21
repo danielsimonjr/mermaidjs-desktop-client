@@ -111,6 +111,27 @@ new preload.
   `APPLE_*` env vars for macOS Developer ID + notarization. The build
   remains unsigned by default.
 
+### Build + release infrastructure
+
+- `electron-builder.yml` now sets `compression: maximum`. This is a no-op
+  for the current Squirrel.Windows target (Squirrel defers to NuGet's
+  fixed compression), but applies automatically if NSIS / DMG / AppImage
+  targets are ever added.
+- `publish: null` replaced with a `github` provider pointing at
+  `danielsimonjr/mermaidjs-desktop-client`. Squirrel now embeds an
+  update-check URL in every build; actually uploading artifacts still
+  requires `--publish always` and `GH_TOKEN`, so local and CI builds are
+  unaffected.
+- New GitHub Actions workflow (`.github/workflows/ci.yml`) runs typecheck,
+  tests, and a renderer+main build on every push to `master` and every PR.
+  Lint is intentionally excluded for now — the tree has a ~120-item
+  CRLF / import-sort backlog that should be cleared as a separate pass.
+- `.gitattributes` added with `* text=auto eol=lf` so future checkouts
+  don't accumulate new CRLF drift on Windows.
+- Dead `src-tauri/**` ignore patterns removed from `biome.jsonc`;
+  `dist-ssr` (Vite SSR output, unused — this isn't an SSR app) removed
+  from `.gitignore`.
+
 ### Internal
 
 - `.gitignore` now excludes `dist-electron/`, `release/`, and `coverage/`

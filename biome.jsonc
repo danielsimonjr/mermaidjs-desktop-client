@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!src-tauri/**", "!dist/**"]
+    "includes": ["**", "!dist/**"]
   },
   "formatter": {
     "enabled": true,
@@ -19,7 +19,7 @@
     "lineWidth": 100,
     "attributePosition": "auto",
     "bracketSpacing": true,
-    "includes": ["**", "!**/pnpm-lock.yaml", "!**/LICENSE", "!src-tauri/**", "!dist/**"]
+    "includes": ["**", "!**/pnpm-lock.yaml", "!**/LICENSE", "!dist/**"]
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
@@ -110,7 +110,6 @@
       "!**/*.tsbuildinfo",
       "!**/.pnpm-debug.log*",
       "!**/.DS_Store",
-      "!src-tauri/**",
       "!dist/**",
       "!**/Thumbs.db"
     ]

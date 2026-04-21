@@ -7,10 +7,10 @@
 // The renderer never touches `app`, `dialog`, `fs`, or `shell` directly — every privileged
 // operation goes through an IPC channel whose contract lives in ./types.ts.
 
-import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 
 // Handle Squirrel.Windows install/uninstall/update events. When this module
 // is required, it inspects process.argv for `--squirrel-install`,
@@ -26,8 +26,8 @@ if (isSquirrelLifecycleEvent) {
 
 import { settingsStore } from './store';
 import {
-  IPC_CHANNELS,
   type AskOptions,
+  IPC_CHANNELS,
   type OpenDialogOptions,
   type SaveDialogOptions,
 } from './types';
@@ -139,7 +139,9 @@ async function createMainWindow(): Promise<void> {
 }
 
 function finiteOr(value: number | undefined, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.round(value) : fallback;
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? Math.round(value)
+    : fallback;
 }
 
 // ---- IPC handlers ----------------------------------------------------------
@@ -156,44 +158,53 @@ function registerIpc(): void {
   });
 
   // Dialog ------------------------------------------------------------------
-  ipcMain.handle(IPC_CHANNELS.dialog.ask, async (_event, message: string, options: AskOptions = {}) => {
-    const parent = BrowserWindow.getFocusedWindow();
-    const result = await dialog.showMessageBox(parent ?? undefined!, {
-      type: options.kind ?? 'question',
-      title: options.title ?? app.getName(),
-      message,
-      buttons: [options.okLabel ?? 'OK', options.cancelLabel ?? 'Cancel'],
-      defaultId: 0,
-      cancelId: 1,
-    });
-    return result.response === 0;
-  });
+  ipcMain.handle(
+    IPC_CHANNELS.dialog.ask,
+    async (_event, message: string, options: AskOptions = {}) => {
+      const parent = BrowserWindow.getFocusedWindow();
+      const result = await dialog.showMessageBox(parent ?? undefined!, {
+        type: options.kind ?? 'question',
+        title: options.title ?? app.getName(),
+        message,
+        buttons: [options.okLabel ?? 'OK', options.cancelLabel ?? 'Cancel'],
+        defaultId: 0,
+        cancelId: 1,
+      });
+      return result.response === 0;
+    }
+  );
 
-  ipcMain.handle(IPC_CHANNELS.dialog.showOpenDialog, async (_event, options: OpenDialogOptions = {}) => {
-    const parent = BrowserWindow.getFocusedWindow();
-    const properties: Array<'openFile' | 'openDirectory' | 'multiSelections'> = [];
-    if (options.directory) properties.push('openDirectory');
-    else properties.push('openFile');
-    if (options.multiple) properties.push('multiSelections');
-    const result = await dialog.showOpenDialog(parent ?? undefined!, {
-      title: options.title,
-      defaultPath: options.defaultPath,
-      filters: options.filters,
-      properties,
-    });
-    if (result.canceled) return null;
-    return options.multiple ? result.filePaths : (result.filePaths[0] ?? null);
-  });
+  ipcMain.handle(
+    IPC_CHANNELS.dialog.showOpenDialog,
+    async (_event, options: OpenDialogOptions = {}) => {
+      const parent = BrowserWindow.getFocusedWindow();
+      const properties: Array<'openFile' | 'openDirectory' | 'multiSelections'> = [];
+      if (options.directory) properties.push('openDirectory');
+      else properties.push('openFile');
+      if (options.multiple) properties.push('multiSelections');
+      const result = await dialog.showOpenDialog(parent ?? undefined!, {
+        title: options.title,
+        defaultPath: options.defaultPath,
+        filters: options.filters,
+        properties,
+      });
+      if (result.canceled) return null;
+      return options.multiple ? result.filePaths : (result.filePaths[0] ?? null);
+    }
+  );
 
-  ipcMain.handle(IPC_CHANNELS.dialog.showSaveDialog, async (_event, options: SaveDialogOptions = {}) => {
-    const parent = BrowserWindow.getFocusedWindow();
-    const result = await dialog.showSaveDialog(parent ?? undefined!, {
-      title: options.title,
-      defaultPath: options.defaultPath,
-      filters: options.filters,
-    });
-    return result.canceled ? null : (result.filePath ?? null);
-  });
+  ipcMain.handle(
+    IPC_CHANNELS.dialog.showSaveDialog,
+    async (_event, options: SaveDialogOptions = {}) => {
+      const parent = BrowserWindow.getFocusedWindow();
+      const result = await dialog.showSaveDialog(parent ?? undefined!, {
+        title: options.title,
+        defaultPath: options.defaultPath,
+        filters: options.filters,
+      });
+      return result.canceled ? null : (result.filePath ?? null);
+    }
+  );
 
   // FS ----------------------------------------------------------------------
   ipcMain.handle(IPC_CHANNELS.fs.readTextFile, async (_event, path: string) => {

@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# Prevent concurrent duplicate runs on the same ref (e.g. branch pushed twice).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck-and-test:
+    name: Typecheck + Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck (renderer + main)
+        run: npm run typecheck
+
+      # `npm run lint` is intentionally omitted: the baseline has ~120 CRLF /
+      # import-ordering findings accumulated pre-CI. Add `run: npm run lint`
+      # back once the tree is normalized (see .gitattributes).
+
+      - name: Tests
+        run: npm test
+
+      - name: Build (renderer + main)
+        # Smoke-checks the full bundle without packaging into an installer —
+        # keeps CI fast while still catching Vite / tsc regressions.
+        run: npm run build

@@ -10,7 +10,6 @@ lerna-debug.log*
 node_modules
 dist
 dist-electron
-dist-ssr
 *.local
 
 # Test + packaging output (note: build/ is NOT here — it holds source icon

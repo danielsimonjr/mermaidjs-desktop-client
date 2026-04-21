@@ -4,6 +4,12 @@ directories:
   output: release
   buildResources: build
 
+# Maximum compression on installer payloads. NOTE: this is a no-op for the
+# current Squirrel.Windows target — Squirrel delegates to NuGet, which uses
+# a fixed compression level — but will apply automatically if NSIS / DMG /
+# AppImage targets are added later. Cheap to leave on.
+compression: maximum
+
 # Only ship what the app actually needs at runtime: compiled main, compiled
 # renderer, and the real (not dev) dependencies declared in package.json.
 files:
@@ -57,4 +63,14 @@ afterPack: ./scripts/after-pack.js
 
 # Skip re-signing and notarization by default — set CSC_LINK / APPLE_ID etc.
 # in your environment to enable them for releases.
-publish: null
+
+# Publish target for auto-update. Squirrel embeds this in the generated
+# RELEASES file and latest.yml so an installed app knows where to look for
+# updates. Local builds and CI builds work fine without GH_TOKEN — the
+# artifacts are only uploaded when electron-builder is run with
+# `--publish always` (or equivalent env flag). Without the flag the tag
+# is still baked into the nupkg for runtime lookups.
+publish:
+  provider: github
+  owner: danielsimonjr
+  repo: mermaidjs-desktop-client

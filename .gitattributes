@@ -1,0 +1,14 @@
+# Force LF line endings in both repo and working tree, on all platforms.
+# Biome's formatter enforces LF; without this, Windows checkouts get CRLF
+# via autocrlf and every lint run reports false-positive format diffs.
+* text=auto eol=lf
+
+# Binary / non-text — leave untouched.
+*.png binary
+*.ico binary
+*.icns binary
+*.jpg binary
+*.gif binary
+*.pdf binary
+*.nupkg binary
+*.asar binary
