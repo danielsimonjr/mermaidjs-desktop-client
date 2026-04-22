@@ -149,7 +149,11 @@ process uses `app.getVersion()` which reads it automatically.
 1. Add the channel name to `electron/types.ts::IPC_CHANNELS`
 2. Add the method signature to `ElectronApi` in the same file
 3. Register the handler in `electron/main.ts::registerIpc`
-4. Wire the bridge in `electron/preload.ts`
+4. Wire the bridge in `electron/preload.ts` — and **also mirror the new
+   channel string into the inlined `IPC_CHANNELS` const inside the
+   preload file itself** (see "Preload sandbox constraint" in Pitfalls).
+   The drift-check test at `tests/electron/preload.test.ts` will fail
+   loudly if you miss this step.
 5. Call it from the renderer as `window.api.<group>.<method>()`
 
 ## Code Style (Biome)
@@ -198,6 +202,68 @@ npm run dev                       # Vite dev server + Electron with DevTools
 
 For main-process breakpoints, launch Electron with `--inspect=9229` and attach
 a Node debugger (e.g., `chrome://inspect` in Chromium, or VS Code).
+
+## Common Pitfalls
+
+These are traps that caused real bugs in this codebase. Read before
+touching the corresponding area.
+
+### Preload sandbox constraint (**critical**)
+
+`BrowserWindow` runs with `sandbox: true`. A sandboxed preload can
+**only `require('electron')` and a handful of built-ins** — it cannot
+require sibling JavaScript files. A `require('./types')` in the
+compiled preload aborts the preload entirely with "module not found",
+`contextBridge.exposeInMainWorld` never runs, and **`window.api` is
+`undefined` in the renderer** — every IPC-backed toolbar action
+silently no-ops via its outer try/catch. Mocked-electron tests do
+**not** exercise this path and will not catch it.
+
+Rule: `electron/preload.ts` must import from `./types` only via
+`import type` (erased at compile time). Any runtime constant it needs
+(currently just `IPC_CHANNELS`) must be **inlined** in the preload
+itself. `tests/electron/preload.test.ts` has a drift-detection test
+that compares the inlined literal against the source-of-truth in
+`types.ts` and fails if they diverge.
+
+Long-term alternative: bundle the preload with esbuild so it ships as
+a single file with all deps inlined. Left as future work since the
+current constant is small.
+
+### Dialog parent on Windows
+
+On Windows, `BrowserWindow.getFocusedWindow()` can briefly return
+`null` during a dropdown-close → menu-click transition. If you pass
+that `null` (or equivalent `undefined`) as the first argument to
+`dialog.showOpenDialog` / `showSaveDialog` / `showMessageBox`, Electron
+accepts it, but the parentless native dialog has **no guaranteed
+z-order** and can land hidden behind the main window — symptom:
+"button does nothing."
+
+Use the `dialogParent()` helper in `electron/main.ts`, which prefers
+the focused window but falls back to the module-level `mainWindow`,
+and explicitly calls the parent-less overload when both are truly
+unavailable. Never pass `undefined!` to these APIs.
+
+### Squirrel install path uses `package.json::name`, not `productName`
+
+Squirrel installs to `%LOCALAPPDATA%\<packageJsonName>\` — for this
+app, `mermaidjs-desktop-client`, **not** `MermaidJS Desktop`. Same for
+the Squirrel package cache. The Start Menu shortcut uses `productName`
+but is nested under `<author.name>\` (from `package.json`). When
+uninstalling or hunting install artifacts, search for the npm `name`
+variant first; `productName` won't find the install directory.
+
+### Preload runtime require audit
+
+After any change to `electron/preload.ts`, verify the compiled output:
+
+```bash
+grep -n "require" dist-electron/preload.js
+```
+
+The **only** line that should match is `const electron_1 = require("electron");`.
+Any other require means the preload will fail to load in production.
 
 ## Migration Notes (Tauri → Electron)
 

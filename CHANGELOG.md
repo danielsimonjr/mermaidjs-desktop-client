@@ -74,6 +74,38 @@ new preload.
 
 - Window close no longer leaves a zombie process on Windows (carried over
   from the `88f1c17` fix; still relevant post-refactor).
+- **Preload script failed to load under `sandbox: true`** (commit
+  `70c2191`). `electron/preload.ts` was importing `IPC_CHANNELS` at
+  runtime from `./types`, which compiled to `require("./types")`.
+  Sandboxed preloads can only `require('electron')` and a handful of
+  built-ins, so the call aborted the preload with "module not found",
+  `contextBridge.exposeInMainWorld` never ran, and `window.api` was
+  left `undefined` in the renderer — every IPC-backed toolbar action
+  silently no-op'd via its outer `try/catch`. Fix: inline the channel
+  constants in `preload.ts`, demote all other `./types` imports to
+  `import type`. A new drift-detection test
+  (`tests/electron/preload.test.ts`) asserts the inlined literal stays
+  in lockstep with `types.ts::IPC_CHANNELS`. Mocked-electron tests did
+  not exercise the sandboxed-preload path, which is why this escaped
+  the 322-test suite.
+- **Native file dialogs could appear hidden behind the main window on
+  Windows** (commit `1c075ef`). The three dialog IPC handlers used
+  `dialog.showOpenDialog(BrowserWindow.getFocusedWindow() ?? undefined!, opts)`.
+  `getFocusedWindow()` briefly returns `null` during a dropdown-close
+  → menu-click transition; the `!` non-null assertion lied to the type
+  system, `undefined` reached Electron, and the resulting parentless
+  native dialog had no guaranteed z-order. Replaced with a
+  `dialogParent()` helper that prefers focused-window and falls back
+  to the module-level `mainWindow`, with explicit parent-less
+  overloads for the truly-unavailable case.
+- **New Diagram button appeared broken on an unmodified doc** (commit
+  `9a65409`). The click handler ran correctly, but every effect was
+  content-identical to the current state (editor content unchanged,
+  preview identical, path already `null`) — the only on-screen effect
+  was a sub-second status-strip flash. Fix: always reset cursor +
+  scroll + focus, and surface a success toast ("New diagram created")
+  so the click has an observable outcome regardless of whether the
+  text actually changed.
 
 ### Performance
 
