@@ -47,7 +47,7 @@
     "electron": "^41.4.0",
     "electron-builder": "^26.8.1",
     "happy-dom": "^20.9.0",
-    "mermaid": "^9.1.7",
+    "mermaid": "^11.14.0",
     "remixicon": "^4.7.0",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3",

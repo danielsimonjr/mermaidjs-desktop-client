@@ -4,6 +4,25 @@ All notable changes to this project are documented here.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Mermaid upgraded `^9.1.7` → `^11.14.0`**. The two APIs the renderer
+  consumes (`mermaid.render(id, src, container) → { svg }` and
+  `mermaid.initialize({ startOnLoad, securityLevel, theme })`) are
+  unchanged across v9 → v11, so no source changes were required.
+  Renderer dynamic-import (`import('mermaid')`) and `m.default` access
+  remain compatible with v11's ESM-only distribution.
+- Adds the new v11 diagram chunks (architecture, block, kanban, packet,
+  treemap, radar, ishikawa, etc.) automatically via Vite code-splitting.
+
+### Security
+
+- Drops 9 transitive `npm audit` advisories (10 high + 1 critical → 0
+  high/critical, 2 moderate remain). Most were in the `d3-color` /
+  `dagre-d3` chain that v11 no longer pulls in.
+
 ## [2.4.0] - 2026-04-21
 
 Major architectural refactor: the desktop shell moves from Tauri (Rust) to
