@@ -120,11 +120,30 @@ async function createMainWindow(): Promise<void> {
   });
 
   // Harden navigation — renderer should never navigate away or open arbitrary URLs.
-  mainWindow.webContents.on('will-navigate', (event, url) => {
-    const targetUrl = new URL(url);
-    const isDev = !app.isPackaged && targetUrl.origin === 'http://localhost:5173';
-    if (!isDev) event.preventDefault();
-  });
+  // Both will-navigate (top-frame nav) and will-redirect (3xx response on the
+  // current request) are gated by the same predicate, since a 302 from any
+  // IPC-introduced fetch would otherwise navigate the top frame and bypass
+  // a will-navigate-only check.
+  //
+  // Dev-mode allow-list: ONLY the Vite root URL. The previous origin-only
+  // check let any path under http://localhost:5173 through, including
+  // attacker-introduced paths like /evil.html.
+  const ALLOWED_DEV_HREFS = new Set<string>(['http://localhost:5173/']);
+  const isAllowedDevNavigation = (url: string): boolean => {
+    if (app.isPackaged) return false;
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return false;
+    }
+    return ALLOWED_DEV_HREFS.has(parsed.href);
+  };
+  const guardNavigation = (event: { preventDefault: () => void }, url: string): void => {
+    if (!isAllowedDevNavigation(url)) event.preventDefault();
+  };
+  mainWindow.webContents.on('will-navigate', guardNavigation);
+  mainWindow.webContents.on('will-redirect', guardNavigation);
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url);
     return { action: 'deny' };

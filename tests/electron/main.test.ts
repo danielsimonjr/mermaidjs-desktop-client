@@ -165,13 +165,49 @@ describe('electron main — lifecycle', () => {
     expect(fakeEvent.preventDefault).toHaveBeenCalled();
   });
 
-  it('allows navigation to the dev URL in non-packaged mode', async () => {
+  it('allows navigation to the dev URL root in non-packaged mode', async () => {
     const electron = await bootMain();
     // @ts-expect-error
     const win = electron.BrowserWindow.instances[0]!;
     const fakeEvent = { preventDefault: vi.fn() };
     win.webContents.emit('will-navigate', fakeEvent, 'http://localhost:5173/');
     expect(fakeEvent.preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('blocks dev navigation to non-root paths on the dev origin', async () => {
+    const electron = await bootMain();
+    // @ts-expect-error
+    const win = electron.BrowserWindow.instances[0]!;
+    const fakeEvent = { preventDefault: vi.fn() };
+    win.webContents.emit('will-navigate', fakeEvent, 'http://localhost:5173/evil.html');
+    expect(fakeEvent.preventDefault).toHaveBeenCalled();
+  });
+
+  it('will-redirect uses the same guard as will-navigate (blocks evil)', async () => {
+    const electron = await bootMain();
+    // @ts-expect-error
+    const win = electron.BrowserWindow.instances[0]!;
+    const fakeEvent = { preventDefault: vi.fn() };
+    win.webContents.emit('will-redirect', fakeEvent, 'https://attacker.example.com/');
+    expect(fakeEvent.preventDefault).toHaveBeenCalled();
+  });
+
+  it('will-redirect allows the dev URL root in non-packaged mode', async () => {
+    const electron = await bootMain();
+    // @ts-expect-error
+    const win = electron.BrowserWindow.instances[0]!;
+    const fakeEvent = { preventDefault: vi.fn() };
+    win.webContents.emit('will-redirect', fakeEvent, 'http://localhost:5173/');
+    expect(fakeEvent.preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('will-redirect blocks non-root paths on the dev origin', async () => {
+    const electron = await bootMain();
+    // @ts-expect-error
+    const win = electron.BrowserWindow.instances[0]!;
+    const fakeEvent = { preventDefault: vi.fn() };
+    win.webContents.emit('will-redirect', fakeEvent, 'http://localhost:5173/redir');
+    expect(fakeEvent.preventDefault).toHaveBeenCalled();
   });
 
   it('window-open handler delegates to shell.openExternal and denies in-renderer open', async () => {
