@@ -8,6 +8,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **`shell:open` IPC protocol allow-list.** The handler used to forward
+  any renderer-supplied URL to `shell.openExternal`, which on Windows will
+  launch every registered URI handler (`ms-msdt:`, `search-ms:`,
+  `file:///`, vendor protos). It now parses the target with `new URL()`
+  and allows only `http:`, `https:`, and `mailto:`; everything else is
+  rejected with a logged warning.
+- **Renderer CSP hardened.** `src/index.html` now declares the full set
+  of 11 directives — adding `connect-src 'self'`, `worker-src 'self'
+  blob:`, `object-src 'none'`, `base-uri 'none'`, `frame-ancestors
+  'none'`, `form-action 'none'`, plus `blob:` for `img-src` (Mermaid 11
+  optional diagram modules can spawn Web Workers and the export pipeline
+  uses `Image` with `data:` URLs, both now explicitly covered).
 - **FS IPC path allow-list (main process).** `fs:readTextFile`,
   `fs:writeTextFile`, and `fs:writeFile` now require the renderer-supplied
   path to have been previously returned by `dialog:showOpenDialog` or

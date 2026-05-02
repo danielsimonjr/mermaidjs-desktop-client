@@ -301,10 +301,46 @@ describe('electron main — IPC handlers', () => {
     expect(await invoke(IPC_CHANNELS.app.getVersion)).toBe('2.4.0');
   });
 
-  it('shell:open forwards to shell.openExternal', async () => {
+  it('shell:open forwards http(s) to shell.openExternal', async () => {
     const electron = await bootMain();
     await invoke(IPC_CHANNELS.shell.open, 'https://x.com');
     expect(electron.shell.openExternal).toHaveBeenCalledWith('https://x.com');
+  });
+
+  it('shell:open forwards mailto: to shell.openExternal', async () => {
+    const electron = await bootMain();
+    await invoke(IPC_CHANNELS.shell.open, 'mailto:hi@example.com');
+    expect(electron.shell.openExternal).toHaveBeenCalledWith('mailto:hi@example.com');
+  });
+
+  it('shell:open rejects ms-msdt: (Follina-class URI handler)', async () => {
+    const electron = await bootMain();
+    await expect(invoke(IPC_CHANNELS.shell.open, 'ms-msdt:/id PCWDiagnostic')).rejects.toThrow(
+      /protocol|denied/i
+    );
+    expect(electron.shell.openExternal).not.toHaveBeenCalled();
+  });
+
+  it('shell:open rejects file:// URLs', async () => {
+    const electron = await bootMain();
+    await expect(invoke(IPC_CHANNELS.shell.open, 'file:///etc/passwd')).rejects.toThrow(
+      /protocol|denied/i
+    );
+    expect(electron.shell.openExternal).not.toHaveBeenCalled();
+  });
+
+  it('shell:open rejects search-ms: and other custom protocols', async () => {
+    const electron = await bootMain();
+    await expect(invoke(IPC_CHANNELS.shell.open, 'search-ms:query=passwords')).rejects.toThrow(
+      /protocol|denied/i
+    );
+    expect(electron.shell.openExternal).not.toHaveBeenCalled();
+  });
+
+  it('shell:open rejects malformed URLs', async () => {
+    const electron = await bootMain();
+    await expect(invoke(IPC_CHANNELS.shell.open, 'not a url')).rejects.toThrow();
+    expect(electron.shell.openExternal).not.toHaveBeenCalled();
   });
 
   it('dialog:ask maps response=0 to true', async () => {

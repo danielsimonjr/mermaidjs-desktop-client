@@ -228,7 +228,25 @@ function registerIpc(): void {
 
   // Shell -------------------------------------------------------------------
   ipcMain.handle(IPC_CHANNELS.shell.open, async (_event, target: string) => {
-    // shell.openExternal is strict — only http/https/mailto/file by default.
+    // shell.openExternal will happily launch ANY registered URI handler on
+    // Windows — `ms-msdt:`, `search-ms:`, `file:///`, vendor protocols — so
+    // we can't trust it to gate by protocol on its own. Parse the URL and
+    // require an explicit-allow-list scheme. Reject everything else with a
+    // logged warning instead of silently dropping it.
+    if (typeof target !== 'string' || target.length === 0) {
+      throw new Error('shell:open: target must be a non-empty string');
+    }
+    let parsed: URL;
+    try {
+      parsed = new URL(target);
+    } catch {
+      throw new Error('shell:open: target is not a valid URL');
+    }
+    const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
+    if (!ALLOWED_PROTOCOLS.has(parsed.protocol)) {
+      console.warn(`shell:open: denied protocol "${parsed.protocol}"`);
+      throw new Error(`shell:open: protocol "${parsed.protocol}" denied`);
+    }
     await shell.openExternal(target);
   });
 
