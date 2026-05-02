@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { IPC_CHANNELS } from '../../electron/types';
 
@@ -309,14 +309,20 @@ describe('electron main — IPC handlers', () => {
 
   it('dialog:ask maps response=0 to true', async () => {
     const electron = await bootMain();
-    vi.mocked(electron.dialog.showMessageBox).mockResolvedValueOnce({ response: 0, checkboxChecked: false });
+    vi.mocked(electron.dialog.showMessageBox).mockResolvedValueOnce({
+      response: 0,
+      checkboxChecked: false,
+    });
     const ok = await invoke(IPC_CHANNELS.dialog.ask, 'proceed?');
     expect(ok).toBe(true);
   });
 
   it('dialog:ask maps response=1 to false', async () => {
     const electron = await bootMain();
-    vi.mocked(electron.dialog.showMessageBox).mockResolvedValueOnce({ response: 1, checkboxChecked: false });
+    vi.mocked(electron.dialog.showMessageBox).mockResolvedValueOnce({
+      response: 1,
+      checkboxChecked: false,
+    });
     const ok = await invoke(IPC_CHANNELS.dialog.ask, 'proceed?');
     expect(ok).toBe(false);
   });
@@ -395,27 +401,110 @@ describe('electron main — IPC handlers', () => {
     expect(await invoke(IPC_CHANNELS.dialog.showSaveDialog, {})).toBeNull();
   });
 
-  it('fs:readTextFile reads utf8', async () => {
-    await bootMain();
+  it('fs:readTextFile reads utf8 (after the path is allow-listed via showOpenDialog)', async () => {
+    const electron = await bootMain();
     const p = path.join(tmpRoot, 'in.txt');
     await fs.writeFile(p, 'hello', 'utf8');
+    vi.mocked(electron.dialog.showOpenDialog).mockResolvedValueOnce({
+      canceled: false,
+      filePaths: [p],
+    });
+    await invoke(IPC_CHANNELS.dialog.showOpenDialog, {});
     expect(await invoke(IPC_CHANNELS.fs.readTextFile, p)).toBe('hello');
   });
 
-  it('fs:writeTextFile writes utf8', async () => {
-    await bootMain();
+  it('fs:writeTextFile writes utf8 (after the path is allow-listed via showSaveDialog)', async () => {
+    const electron = await bootMain();
     const p = path.join(tmpRoot, 'out.txt');
+    vi.mocked(electron.dialog.showSaveDialog).mockResolvedValueOnce({
+      canceled: false,
+      filePath: p,
+    });
+    await invoke(IPC_CHANNELS.dialog.showSaveDialog, {});
     await invoke(IPC_CHANNELS.fs.writeTextFile, p, 'bye');
     expect(await fs.readFile(p, 'utf8')).toBe('bye');
   });
 
-  it('fs:writeFile writes raw bytes', async () => {
-    await bootMain();
+  it('fs:writeFile writes raw bytes (after the path is allow-listed via showSaveDialog)', async () => {
+    const electron = await bootMain();
     const p = path.join(tmpRoot, 'out.bin');
+    vi.mocked(electron.dialog.showSaveDialog).mockResolvedValueOnce({
+      canceled: false,
+      filePath: p,
+    });
+    await invoke(IPC_CHANNELS.dialog.showSaveDialog, {});
     const bytes = new Uint8Array([0xca, 0xfe, 0xba, 0xbe]);
     await invoke(IPC_CHANNELS.fs.writeFile, p, bytes);
     const read = await fs.readFile(p);
     expect(Array.from(read)).toEqual([0xca, 0xfe, 0xba, 0xbe]);
+  });
+
+  // ---- Path allow-list (security finding #1) ------------------------------
+
+  it('fs:readTextFile rejects a path that was never returned by a dialog', async () => {
+    await bootMain();
+    const sneaky = path.join(tmpRoot, 'never-picked.txt');
+    await fs.writeFile(sneaky, 'secret', 'utf8');
+    await expect(invoke(IPC_CHANNELS.fs.readTextFile, sneaky)).rejects.toThrow(
+      /not allow-listed|denied/i
+    );
+  });
+
+  it('fs:writeTextFile rejects a path that was never returned by a dialog', async () => {
+    await bootMain();
+    const sneaky = path.join(tmpRoot, 'never-picked.txt');
+    await expect(invoke(IPC_CHANNELS.fs.writeTextFile, sneaky, 'data')).rejects.toThrow(
+      /not allow-listed|denied/i
+    );
+  });
+
+  it('fs:writeFile rejects a path that was never returned by a dialog', async () => {
+    await bootMain();
+    const sneaky = path.join(tmpRoot, 'never-picked.bin');
+    await expect(invoke(IPC_CHANNELS.fs.writeFile, sneaky, new Uint8Array([0]))).rejects.toThrow(
+      /not allow-listed|denied/i
+    );
+  });
+
+  it('fs:readTextFile rejects a UNC path that was not picked', async () => {
+    await bootMain();
+    await expect(
+      invoke(IPC_CHANNELS.fs.readTextFile, '\\\\server\\share\\foo.txt')
+    ).rejects.toThrow(/not allow-listed|denied|unc/i);
+  });
+
+  it('fs:readTextFile rejects DOS-device paths even if a similar-looking path was picked', async () => {
+    const electron = await bootMain();
+    const picked = path.join(tmpRoot, 'real.txt');
+    await fs.writeFile(picked, 'ok', 'utf8');
+    vi.mocked(electron.dialog.showOpenDialog).mockResolvedValueOnce({
+      canceled: false,
+      filePaths: [picked],
+    });
+    await invoke(IPC_CHANNELS.dialog.showOpenDialog, {});
+    // Same target, but addressed via \\?\ DOS-device prefix — must be rejected.
+    await expect(invoke(IPC_CHANNELS.fs.readTextFile, `\\\\?\\${picked}`)).rejects.toThrow(
+      /not allow-listed|denied|dos-device/i
+    );
+  });
+
+  it('fs:readTextFile rejects paths containing a NUL byte', async () => {
+    await bootMain();
+    await expect(invoke(IPC_CHANNELS.fs.readTextFile, 'foo\0.txt')).rejects.toThrow();
+  });
+
+  it('fs:readTextFile accepts a path resolved through a symlinkable case variation when picked', async () => {
+    // Sanity: the allow-list compares path.resolve()'d strings, so picking foo.txt
+    // and reading foo.txt — even via a different but equivalent resolution — works.
+    const electron = await bootMain();
+    const p = path.join(tmpRoot, 'roundtrip.txt');
+    await fs.writeFile(p, 'roundtrip', 'utf8');
+    vi.mocked(electron.dialog.showOpenDialog).mockResolvedValueOnce({
+      canceled: false,
+      filePaths: [p],
+    });
+    await invoke(IPC_CHANNELS.dialog.showOpenDialog, {});
+    expect(await invoke(IPC_CHANNELS.fs.readTextFile, p)).toBe('roundtrip');
   });
 
   it('store:get / set / save roundtrip', async () => {

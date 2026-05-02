@@ -8,7 +8,7 @@
 // operation goes through an IPC channel whose contract lives in ./types.ts.
 
 import { promises as fs } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve as resolvePath } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 
@@ -144,6 +144,66 @@ function finiteOr(value: number | undefined, fallback: number): number {
     : fallback;
 }
 
+// ---- Filesystem path allow-list -------------------------------------------
+//
+// Renderer-supplied paths flowing into fs.readTextFile / writeTextFile /
+// writeFile are NOT trusted. The renderer can only read / write a path that
+// the user *explicitly* picked through a native dialog in this session. We
+// remember every path returned by dialog.showOpenDialog / showSaveDialog and
+// require that subsequent FS calls hit a member of that set after canonical
+// path.resolve().
+//
+// We also reject some classes of paths outright, even if the literal string
+// somehow reached the allow-list:
+//   * NUL byte (`\0`) — classic API-confusion truncation
+//   * DOS-device prefixes (`\\?\`, `\\.\`) — bypass Win32 path normalization
+//   * UNC (`\\server\share`) — only allowed when the dialog explicitly returned
+//     such a path, never as a raw renderer string
+//
+// `path.resolve()` is the single canonicalization point so that both the
+// allow-list entry and the call site are compared apples-to-apples. We do
+// NOT call fs.realpath — symlink resolution is a separate concern and on
+// Windows would mask a UNC vs DOS-device-vs-drive-letter difference we want
+// to keep visible.
+
+const allowedFsPaths = new Set<string>();
+
+function rememberAllowedPath(p: string): void {
+  if (typeof p !== 'string' || p.length === 0) return;
+  allowedFsPaths.add(resolvePath(p));
+}
+
+function assertAllowedPath(input: unknown): string {
+  if (typeof input !== 'string' || input.length === 0) {
+    throw new Error('fs: path must be a non-empty string');
+  }
+  if (input.includes('\0')) {
+    throw new Error('fs: path contains NUL byte (denied)');
+  }
+  // Reject Windows DOS-device prefixes regardless of allow-list membership.
+  // `\\?\C:\foo` and `\\.\C:\foo` skip Win32 path normalization and would let
+  // a renderer dodge the allow-list by re-spelling an allowed target.
+  if (input.startsWith('\\\\?\\') || input.startsWith('\\\\.\\')) {
+    throw new Error('fs: DOS-device path prefix not allowed (denied)');
+  }
+  const resolved = resolvePath(input);
+  if (!allowedFsPaths.has(resolved)) {
+    // Don't echo the path back to the renderer — it'd just confirm the probe.
+    throw new Error('fs: path is not allow-listed (denied)');
+  }
+  return resolved;
+}
+
+// Test-only hooks. Production code never calls these. Tests reset the
+// allow-list via vi.resetModules() between tests, but exposing this also
+// lets future tests assert on / seed the allow-list directly.
+export function __resetAllowedFsPathsForTests(): void {
+  allowedFsPaths.clear();
+}
+export function __seedAllowedFsPathForTests(p: string): void {
+  rememberAllowedPath(p);
+}
+
 // ---- IPC handlers ----------------------------------------------------------
 
 /**
@@ -210,6 +270,9 @@ function registerIpc(): void {
         ? await dialog.showOpenDialog(parent, opts)
         : await dialog.showOpenDialog(opts);
       if (result.canceled) return null;
+      // Remember every picked path so subsequent fs.* IPC calls can reach
+      // them. See "Filesystem path allow-list" above.
+      for (const p of result.filePaths) rememberAllowedPath(p);
       return options.multiple ? result.filePaths : (result.filePaths[0] ?? null);
     }
   );
@@ -226,20 +289,29 @@ function registerIpc(): void {
       const result = parent
         ? await dialog.showSaveDialog(parent, opts)
         : await dialog.showSaveDialog(opts);
-      return result.canceled ? null : (result.filePath ?? null);
+      if (result.canceled || !result.filePath) return null;
+      // Remember the picked save path so the renderer's follow-up
+      // fs.writeTextFile / writeFile call clears the allow-list check.
+      rememberAllowedPath(result.filePath);
+      return result.filePath;
     }
   );
 
   // FS ----------------------------------------------------------------------
+  // Each of these revalidates the renderer-supplied path against the
+  // dialog-driven allow-list. See "Filesystem path allow-list" above.
   ipcMain.handle(IPC_CHANNELS.fs.readTextFile, async (_event, path: string) => {
-    return fs.readFile(path, 'utf8');
+    const safe = assertAllowedPath(path);
+    return fs.readFile(safe, 'utf8');
   });
   ipcMain.handle(IPC_CHANNELS.fs.writeTextFile, async (_event, path: string, contents: string) => {
-    await fs.writeFile(path, contents, 'utf8');
+    const safe = assertAllowedPath(path);
+    await fs.writeFile(safe, contents, 'utf8');
   });
   ipcMain.handle(IPC_CHANNELS.fs.writeFile, async (_event, path: string, contents: Uint8Array) => {
+    const safe = assertAllowedPath(path);
     // contents arrives as a Uint8Array (transferable); wrap as Buffer for Node's writeFile.
-    await fs.writeFile(path, Buffer.from(contents));
+    await fs.writeFile(safe, Buffer.from(contents));
   });
 
   // Store -------------------------------------------------------------------

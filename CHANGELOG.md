@@ -6,6 +6,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Security
+
+- **FS IPC path allow-list (main process).** `fs:readTextFile`,
+  `fs:writeTextFile`, and `fs:writeFile` now require the renderer-supplied
+  path to have been previously returned by `dialog:showOpenDialog` or
+  `dialog:showSaveDialog` in the same session. Paths are canonicalized via
+  `path.resolve()` before allow-list lookup. NUL bytes and Windows
+  DOS-device prefixes (`\\?\`, `\\.\`) are rejected outright; UNC paths are
+  only reachable when the dialog itself returned them. Closes the
+  pre-existing gap where a renderer-side XSS (e.g. via the `innerHTML`
+  preview path) could read or overwrite arbitrary files.
+
 ### Changed
 
 - **Mermaid upgraded `^9.1.7` → `^11.14.0`**. The two APIs the renderer
