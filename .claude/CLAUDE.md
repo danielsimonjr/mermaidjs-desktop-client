@@ -10,9 +10,9 @@ Cross-platform desktop application for creating, editing, and exporting Mermaid 
 
 | Layer | Technologies |
 |-------|-------------|
-| Frontend | TypeScript 5.9, Vite 7.3, CodeMirror 6, Mermaid 11.12 |
-| Desktop shell | Electron 35 (main + preload, contextIsolation on) |
-| Packaging | electron-builder 25 |
+| Frontend | TypeScript 5.9, Vite 7.3, CodeMirror 6, Mermaid 11.14 |
+| Desktop shell | Electron 41 (main + preload, contextIsolation on) |
+| Packaging | electron-builder 26 |
 | Icons | RemixIcon 4.7 |
 | Linting | Biome 2.3 |
 | Package Manager | npm (also works with pnpm if you prefer) |
@@ -189,9 +189,19 @@ process uses `app.getVersion()` which reads it automatically.
 
 - Mermaid: `securityLevel: 'strict'`
 - `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true` on the BrowserWindow
-- CSP in `src/index.html`: `default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; script-src 'self'`
+- CSP in `src/index.html` declares the full set of 11 directives (`default-src`, `script-src`, `style-src` with `'unsafe-inline'`, `img-src` with `data:`+`blob:`, `font-src` with `data:`, `connect-src`, `worker-src` with `blob:`, `object-src 'none'`, `base-uri 'none'`, `frame-ancestors 'none'`, `form-action 'none'`)
 - External links rewritten through `shell.openExternal` via `setWindowOpenHandler`
 - File access only through typed IPC handlers in `electron/main.ts`
+- `fs:*` IPC handlers gate every renderer-supplied path against a
+  per-session allow-list of paths returned by `dialog.showOpen/SaveDialog`;
+  NUL bytes and Windows DOS-device prefixes (`\\?\`, `\\.\`) are rejected
+  outright. See "Filesystem path allow-list" comment block in `electron/main.ts`.
+- `shell:open` IPC handler parses with `new URL()` and forwards only
+  `http:`, `https:`, `mailto:` to `shell.openExternal`; everything else
+  (`ms-msdt:`, `search-ms:`, `file:///`, vendor protos) is rejected.
+- `will-navigate` AND `will-redirect` share a single href-exact-match
+  predicate: dev-mode allows only `http://localhost:5173/`, packaged
+  allows nothing.
 
 ## Debugging
 

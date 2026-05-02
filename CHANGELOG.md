@@ -38,6 +38,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   pre-existing gap where a renderer-side XSS (e.g. via the `innerHTML`
   preview path) could read or overwrite arbitrary files.
 
+### Documentation
+
+- **`.claude/CLAUDE.md` version sync**. Tech-stack table corrected:
+  Electron 35 → 41, Mermaid 11.12 → 11.14, electron-builder 25 → 26
+  (matches `package.json`). The Security section now documents the
+  full 11-directive CSP and the new IPC trust-boundary guards
+  (fs path allow-list, shell:open protocol allow-list, exact-href
+  navigation guard).
+
 ### Changed
 
 - **Mermaid upgraded `^9.1.7` → `^11.14.0`**. The two APIs the renderer
