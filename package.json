@@ -47,12 +47,17 @@
     "electron": "^41.4.0",
     "electron-builder": "^26.8.1",
     "happy-dom": "^20.9.0",
-    "mermaid": "^11.14.0",
+    "mermaid": "^11.15.0",
     "remixicon": "^4.7.0",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
     "vitest": "^4.1.4",
     "wait-on": "^8.0.1"
+  },
+  "overrides": {
+    "shell-quote": "^1.8.4",
+    "axios": "^1.16.0",
+    "tmp": "^0.2.6"
   }
 }
