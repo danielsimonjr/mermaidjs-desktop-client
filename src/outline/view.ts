@@ -4,7 +4,7 @@
 
 import type { EditorView } from 'codemirror';
 
-import { parseOutline, type OutlineEntry } from './parse';
+import { type OutlineEntry, parseOutline } from './parse';
 
 export interface OutlineController {
   /** Call whenever the editor document changes to refresh the outline. */

@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { EditorState } from '@codemirror/state';
 import { highlightingFor, syntaxTree } from '@codemirror/language';
+import { EditorState } from '@codemirror/state';
+import { describe, expect, it } from 'vitest';
 
 import { createMermaidLanguage } from '../../src/editor/language';
 

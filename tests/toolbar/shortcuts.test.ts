@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { setupToolbarShortcuts } from '../../src/toolbar/shortcuts';
 
@@ -54,9 +54,7 @@ describe('setupToolbarShortcuts', () => {
     const clicked = vi.fn();
     saveButton.addEventListener('click', clicked);
     setupToolbarShortcuts({ saveButton });
-    window.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 's', ctrlKey: true, altKey: true })
-    );
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, altKey: true }));
     expect(clicked).not.toHaveBeenCalled();
   });
 

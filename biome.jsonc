@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.12/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -129,6 +129,18 @@
     "globals": ["exports"]
   },
   "overrides": [
+    {
+      // Empty no-op callbacks (`() => {}`) are idiomatic in test mocks
+      // (vi.fn implementations, rejected-promise catch stubs).
+      "includes": ["tests/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noEmptyBlockStatements": "off"
+          }
+        }
+      }
+    },
     {
       "includes": ["**/*.md"],
       "formatter": {

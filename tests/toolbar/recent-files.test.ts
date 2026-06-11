@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { basenameOf, createRecentFiles } from '../../src/toolbar/recent-files';
 
@@ -47,11 +47,7 @@ describe('createRecentFiles', () => {
     const rf = createRecentFiles();
     const next = await rf.push('a.mmd');
     expect(next).toEqual(['a.mmd', 'b.mmd', 'c.mmd']);
-    expect(window.api.store.set).toHaveBeenCalledWith('recentFiles', [
-      'a.mmd',
-      'b.mmd',
-      'c.mmd',
-    ]);
+    expect(window.api.store.set).toHaveBeenCalledWith('recentFiles', ['a.mmd', 'b.mmd', 'c.mmd']);
   });
 
   it('push deduplicates by moving existing to front', async () => {

@@ -12,10 +12,10 @@
   font-feature-settings: "cv11", "ss01", "ss03"; /* Inter tabular + stylistic */
 
   /* ---- Surface scale (dark-first) ---- */
-  --bg-0: #0e0f13;            /* app window */
-  --bg-1: #16181d;            /* panels */
-  --bg-2: #1d1f27;            /* elevated: menus, palette, modal */
-  --bg-3: #252833;            /* hover surfaces */
+  --bg-0: #0e0f13; /* app window */
+  --bg-1: #16181d; /* panels */
+  --bg-2: #1d1f27; /* elevated: menus, palette, modal */
+  --bg-3: #252833; /* hover surfaces */
   --bg-overlay: rgba(14, 15, 19, 0.72);
 
   /* ---- Borders ---- */
@@ -61,7 +61,8 @@
   --shadow-focus: 0 0 0 2px var(--accent-glow);
 
   /* ---- Typography scale ---- */
-  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-mono:
+    "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --text-xs: 11px;
   --text-sm: 12px;
   --text-base: 13px;
@@ -746,8 +747,12 @@ button {
 }
 
 @keyframes palette-overlay-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .palette {

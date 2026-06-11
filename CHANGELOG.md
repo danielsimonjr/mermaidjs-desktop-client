@@ -11,7 +11,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ### Security
 
 - **Tighter `will-navigate` + new `will-redirect` guard.** The dev-mode
-  allow rule used to permit *any* path under `http://localhost:5173`
+  allow rule used to permit _any_ path under `http://localhost:5173`
   (origin-only check), so an attacker-introduced URL like
   `http://localhost:5173/evil.html` would have navigated the top frame.
   The guard now requires `URL.href === 'http://localhost:5173/'`. The

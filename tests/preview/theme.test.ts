@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('mermaid', () => ({
   default: {
@@ -15,9 +15,7 @@ describe('createMermaidTheme', () => {
     const ctrl = createMermaidTheme();
     const applied = await ctrl.initialize();
     expect(applied).toBe('dark'); // default
-    expect(mermaid.initialize).toHaveBeenCalledWith(
-      expect.objectContaining({ theme: 'dark' })
-    );
+    expect(mermaid.initialize).toHaveBeenCalledWith(expect.objectContaining({ theme: 'dark' }));
   });
 
   it('initialize() honors a stored theme', async () => {
@@ -49,9 +47,7 @@ describe('createMermaidTheme', () => {
     const ctrl = createMermaidTheme(onChange);
     await ctrl.set('neutral');
     expect(ctrl.get()).toBe('neutral');
-    expect(mermaid.initialize).toHaveBeenCalledWith(
-      expect.objectContaining({ theme: 'neutral' })
-    );
+    expect(mermaid.initialize).toHaveBeenCalledWith(expect.objectContaining({ theme: 'neutral' }));
     expect(window.api.store.set).toHaveBeenCalledWith('mermaidTheme', 'neutral');
     expect(onChange).toHaveBeenCalledWith('neutral');
   });

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { initHorizontalResize } from '../../src/workspace/resize';
 
@@ -12,9 +12,29 @@ function makeLayout() {
 
   // Happy-DOM returns zeros for getBoundingClientRect; stub to realistic values.
   container.getBoundingClientRect = () =>
-    ({ x: 0, y: 0, width: 1000, height: 600, top: 0, left: 0, right: 1000, bottom: 600, toJSON() {} }) as DOMRect;
+    ({
+      x: 0,
+      y: 0,
+      width: 1000,
+      height: 600,
+      top: 0,
+      left: 0,
+      right: 1000,
+      bottom: 600,
+      toJSON() {},
+    }) as DOMRect;
   editor.getBoundingClientRect = () =>
-    ({ x: 0, y: 0, width: 500, height: 600, top: 0, left: 0, right: 500, bottom: 600, toJSON() {} }) as DOMRect;
+    ({
+      x: 0,
+      y: 0,
+      width: 500,
+      height: 600,
+      top: 0,
+      left: 0,
+      right: 500,
+      bottom: 600,
+      toJSON() {},
+    }) as DOMRect;
 
   return { container, editor, preview, divider };
 }

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Stub mermaid BEFORE importing export-diagram.
 vi.mock('mermaid', () => ({
@@ -149,12 +149,16 @@ describe('export-diagram — PNG pipeline', () => {
   it('throws when canvas.getContext returns null (happens on exotic platforms)', async () => {
     // Use the real Document prototype method to bypass the outer beforeEach spy.
     const realCreate = Document.prototype.createElement.bind(document);
-    (document.createElement as unknown as { mockImplementation: (impl: (tag: string) => HTMLElement) => void }).mockImplementation((tag: string) => {
+    (
+      document.createElement as unknown as {
+        mockImplementation: (impl: (tag: string) => HTMLElement) => void;
+      }
+    ).mockImplementation((tag: string) => {
       const el = realCreate(tag);
       if (tag === 'canvas') {
         (el as HTMLCanvasElement).getContext = vi.fn(
           () => null
-        ) as unknown as HTMLCanvasElement["getContext"];
+        ) as unknown as HTMLCanvasElement['getContext'];
       }
       return el;
     });
@@ -170,7 +174,11 @@ describe('export-diagram — PNG pipeline', () => {
 
   it('throws when canvas.toBlob yields null (logged, not crashed)', async () => {
     const realCreate = Document.prototype.createElement.bind(document);
-    (document.createElement as unknown as { mockImplementation: (impl: (tag: string) => HTMLElement) => void }).mockImplementation((tag: string) => {
+    (
+      document.createElement as unknown as {
+        mockImplementation: (impl: (tag: string) => HTMLElement) => void;
+      }
+    ).mockImplementation((tag: string) => {
       const el = realCreate(tag);
       if (tag === 'canvas') {
         (el as HTMLCanvasElement).getContext = vi.fn(
@@ -183,7 +191,7 @@ describe('export-diagram — PNG pipeline', () => {
               globalAlpha: 1,
               fillStyle: '#ffffff',
             }) as unknown as CanvasRenderingContext2D
-        ) as unknown as HTMLCanvasElement["getContext"];
+        ) as unknown as HTMLCanvasElement['getContext'];
         (el as HTMLCanvasElement).toBlob = vi.fn((cb: BlobCallback) => cb(null));
       }
       return el;

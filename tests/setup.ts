@@ -8,7 +8,7 @@
 //      window.api.* without each test rewiring it. Individual tests override
 //      specific methods with vi.mocked() when they need to assert on calls.
 
-import { vi, beforeEach } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 
 // ---- ResizeObserver polyfill ----
 if (!(globalThis as unknown as { ResizeObserver?: unknown }).ResizeObserver) {

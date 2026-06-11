@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { CommandRegistry } from '../../src/palette/registry';
 import { createPalette, type PaletteController } from '../../src/palette/ui';
@@ -20,12 +20,28 @@ function setup() {
     theme: vi.fn(),
   };
   registry.registerAll([
-    { id: 'file.save', label: 'Save diagram', icon: 'save-3-line', category: 'File',
-      keybinding: ['Ctrl', 'S'], run: runs.save },
-    { id: 'file.open', label: 'Open file', icon: 'folder-open-line', category: 'File',
-      run: runs.open },
-    { id: 'theme.dark', label: 'Dark theme', icon: 'moon-line', category: 'Theme',
-      run: runs.theme },
+    {
+      id: 'file.save',
+      label: 'Save diagram',
+      icon: 'save-3-line',
+      category: 'File',
+      keybinding: ['Ctrl', 'S'],
+      run: runs.save,
+    },
+    {
+      id: 'file.open',
+      label: 'Open file',
+      icon: 'folder-open-line',
+      category: 'File',
+      run: runs.open,
+    },
+    {
+      id: 'theme.dark',
+      label: 'Dark theme',
+      icon: 'moon-line',
+      category: 'Theme',
+      run: runs.theme,
+    },
   ]);
   const palette = createPalette(registry);
   createdPalettes.push(palette);
@@ -129,7 +145,9 @@ describe('createPalette', () => {
     const last = document.querySelectorAll('.palette-item');
     expect(last[last.length - 1].getAttribute('data-selected')).toBe('true');
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
-    expect(document.querySelectorAll('.palette-item')[0].getAttribute('data-selected')).toBe('true');
+    expect(document.querySelectorAll('.palette-item')[0].getAttribute('data-selected')).toBe(
+      'true'
+    );
   });
 
   it('Enter runs the selected command', async () => {

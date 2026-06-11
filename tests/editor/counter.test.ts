@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
+import { describe, expect, it } from 'vitest';
 
 import { createCounterExtension } from '../../src/editor/counter';
 

@@ -1,10 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
-  loadSettingsStore,
-  setupWindowPersistence,
   loadEditorZoom,
+  loadSettingsStore,
   saveEditorZoom,
+  setupWindowPersistence,
 } from '../../src/window/state';
 
 describe('window/state', () => {

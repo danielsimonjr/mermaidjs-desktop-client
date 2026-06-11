@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { setupExamplesMenu, type ExampleItem } from '../../src/toolbar/examples-menu';
+import { type ExampleItem, setupExamplesMenu } from '../../src/toolbar/examples-menu';
 
 const SAMPLE: ExampleItem[] = [
   { id: 'flow', label: 'Flowchart', content: 'graph TD\n A-->B', order: 1 },

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
+import { describe, expect, it, vi } from 'vitest';
 
 import { createOutline } from '../../src/outline/view';
 
@@ -44,8 +44,8 @@ describe('createOutline', () => {
   it('sets data-kind based on entry type', () => {
     const { list, outline } = setup();
     outline.update('graph TD\n  A[Start]');
-    const kinds = [...list.querySelectorAll('.outline-item')].map((n) =>
-      (n as HTMLElement).dataset.kind
+    const kinds = [...list.querySelectorAll('.outline-item')].map(
+      (n) => (n as HTMLElement).dataset.kind
     );
     expect(kinds).toContain('header');
     expect(kinds).toContain('node');

@@ -3,9 +3,9 @@
 // Writes are debounced so a resize drag or rapid key presses don't hammer the disk,
 // but we always flush on app quit so nothing is lost on clean exit.
 
-import { app } from 'electron';
 import { promises as fs } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { app } from 'electron';
 
 const SETTINGS_FILENAME = 'settings.json';
 const FLUSH_DELAY_MS = 400;
@@ -80,7 +80,11 @@ class SettingsStore {
     } catch (err) {
       console.warn('[settings] write failed:', err);
       // Best-effort cleanup of stale tmp.
-      try { await fs.unlink(tmp); } catch { /* ignore */ }
+      try {
+        await fs.unlink(tmp);
+      } catch {
+        /* ignore */
+      }
     }
   }
 }

@@ -1,5 +1,5 @@
 import { indentWithTab } from '@codemirror/commands';
-import { EditorState, StateEffect, type Extension } from '@codemirror/state';
+import { EditorState, type Extension, StateEffect } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 import { basicSetup, EditorView } from 'codemirror';
 import 'remixicon/fonts/remixicon.css';
@@ -27,8 +27,8 @@ import {
 } from './preview/zoom';
 import type { ExampleItem } from './toolbar/examples-menu';
 import { setupExamplesMenu } from './toolbar/examples-menu';
-import { setupExportMenu, type ExportFormat } from './toolbar/export-menu';
 import { createExportHandler } from './toolbar/export-diagram';
+import { type ExportFormat, setupExportMenu } from './toolbar/export-menu';
 import { setupNewDiagramAction } from './toolbar/new-diagram';
 import { openPath, pickAndOpenDiagram } from './toolbar/open-diagram';
 import { basenameOf, createRecentFiles } from './toolbar/recent-files';
@@ -69,9 +69,7 @@ async function bootstrap(): Promise<void> {
   const outlineToggleBtn = document.querySelector<HTMLButtonElement>(
     '[data-action="toggle-outline"]'
   );
-  const examplesButton = document.querySelector<HTMLButtonElement>(
-    '[data-action="examples-menu"]'
-  );
+  const examplesButton = document.querySelector<HTMLButtonElement>('[data-action="examples-menu"]');
   const exportButton = document.querySelector<HTMLButtonElement>('[data-action="export-menu"]');
   const themeButton = document.querySelector<HTMLButtonElement>('[data-action="theme-menu"]');
   const paletteButton = document.querySelector<HTMLButtonElement>(
@@ -509,11 +507,7 @@ function createFileStatusController(
       nameEl.textContent = name + (dirty ? ' •' : '');
       wrapper.dataset.dirty = dirty ? 'true' : 'false';
       const saved = lastSavedAt ? ` · Saved ${formatTime(lastSavedAt)}` : '';
-      wrapper.title = path
-        ? `${path}${saved}`
-        : dirty
-          ? 'Unsaved changes'
-          : 'Untitled diagram';
+      wrapper.title = path ? `${path}${saved}` : dirty ? 'Unsaved changes' : 'Untitled diagram';
     },
   };
 }
@@ -659,33 +653,107 @@ function registerPaletteCommands(h: PaletteHandlers): void {
   const isMac = navigator.platform.toLowerCase().includes('mac');
   const mod = isMac ? '⌘' : 'Ctrl';
   h.registry.registerAll([
-    { id: 'file.new', label: 'New diagram', icon: 'file-add-line', category: 'File',
-      keybinding: [mod, 'N'], run: h.onNew },
-    { id: 'file.open', label: 'Open file…', icon: 'folder-open-line', category: 'File',
-      keybinding: [mod, 'O'], run: () => void h.onOpen() },
-    { id: 'file.save', label: 'Save', icon: 'save-3-line', category: 'File',
-      keybinding: [mod, 'S'], run: () => void h.onSave() },
-    { id: 'export.png', label: 'Export as PNG', icon: 'image-line', category: 'Export',
-      run: () => void h.onExport('png') },
-    { id: 'export.png2x', label: 'Export as PNG ×2', icon: 'image-2-line', category: 'Export',
-      run: () => void h.onExport('pngx2') },
-    { id: 'export.svg', label: 'Export as SVG', icon: 'code-s-slash-line', category: 'Export',
-      run: () => void h.onExport('svg') },
-    { id: 'view.toggleOutline', label: 'Toggle outline sidebar', icon: 'list-unordered',
-      category: 'View', run: h.onToggleOutline },
-    { id: 'view.copySvg', label: 'Copy SVG to clipboard', icon: 'file-copy-line',
-      category: 'View', run: h.onCopySvg },
-    { id: 'view.zoomReset', label: 'Reset preview zoom', icon: 'refresh-line',
-      category: 'View', run: h.onZoomReset },
-    { id: 'theme.default', label: 'Default theme', icon: 'contrast-line', category: 'Theme',
-      run: () => void h.onTheme('default') },
-    { id: 'theme.dark', label: 'Dark theme', icon: 'moon-line', category: 'Theme',
-      run: () => void h.onTheme('dark') },
-    { id: 'theme.forest', label: 'Forest theme', icon: 'leaf-line', category: 'Theme',
-      run: () => void h.onTheme('forest') },
-    { id: 'theme.neutral', label: 'Neutral theme', icon: 'contrast-2-line', category: 'Theme',
-      run: () => void h.onTheme('neutral') },
-    { id: 'help.open', label: 'Open help', icon: 'question-line', category: 'Help',
-      keybinding: ['F1'], run: h.onHelp },
+    {
+      id: 'file.new',
+      label: 'New diagram',
+      icon: 'file-add-line',
+      category: 'File',
+      keybinding: [mod, 'N'],
+      run: h.onNew,
+    },
+    {
+      id: 'file.open',
+      label: 'Open file…',
+      icon: 'folder-open-line',
+      category: 'File',
+      keybinding: [mod, 'O'],
+      run: () => void h.onOpen(),
+    },
+    {
+      id: 'file.save',
+      label: 'Save',
+      icon: 'save-3-line',
+      category: 'File',
+      keybinding: [mod, 'S'],
+      run: () => void h.onSave(),
+    },
+    {
+      id: 'export.png',
+      label: 'Export as PNG',
+      icon: 'image-line',
+      category: 'Export',
+      run: () => void h.onExport('png'),
+    },
+    {
+      id: 'export.png2x',
+      label: 'Export as PNG ×2',
+      icon: 'image-2-line',
+      category: 'Export',
+      run: () => void h.onExport('pngx2'),
+    },
+    {
+      id: 'export.svg',
+      label: 'Export as SVG',
+      icon: 'code-s-slash-line',
+      category: 'Export',
+      run: () => void h.onExport('svg'),
+    },
+    {
+      id: 'view.toggleOutline',
+      label: 'Toggle outline sidebar',
+      icon: 'list-unordered',
+      category: 'View',
+      run: h.onToggleOutline,
+    },
+    {
+      id: 'view.copySvg',
+      label: 'Copy SVG to clipboard',
+      icon: 'file-copy-line',
+      category: 'View',
+      run: h.onCopySvg,
+    },
+    {
+      id: 'view.zoomReset',
+      label: 'Reset preview zoom',
+      icon: 'refresh-line',
+      category: 'View',
+      run: h.onZoomReset,
+    },
+    {
+      id: 'theme.default',
+      label: 'Default theme',
+      icon: 'contrast-line',
+      category: 'Theme',
+      run: () => void h.onTheme('default'),
+    },
+    {
+      id: 'theme.dark',
+      label: 'Dark theme',
+      icon: 'moon-line',
+      category: 'Theme',
+      run: () => void h.onTheme('dark'),
+    },
+    {
+      id: 'theme.forest',
+      label: 'Forest theme',
+      icon: 'leaf-line',
+      category: 'Theme',
+      run: () => void h.onTheme('forest'),
+    },
+    {
+      id: 'theme.neutral',
+      label: 'Neutral theme',
+      icon: 'contrast-2-line',
+      category: 'Theme',
+      run: () => void h.onTheme('neutral'),
+    },
+    {
+      id: 'help.open',
+      label: 'Open help',
+      icon: 'question-line',
+      category: 'Help',
+      keybinding: ['F1'],
+      run: h.onHelp,
+    },
   ]);
 }

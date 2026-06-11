@@ -4,8 +4,8 @@
 // Close:  palette.close()
 // Toggle: palette.toggle()
 
-import type { Command, CommandRegistry } from './registry';
 import { fuzzyScore } from './fuzzy';
+import type { Command, CommandRegistry } from './registry';
 
 export interface PaletteController {
   open(): void;

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { CommandRegistry } from '../../src/palette/registry';
 
@@ -69,7 +69,10 @@ describe('CommandRegistry', () => {
     r.register({ ...cmd('a'), isAvailable: () => false });
     r.register({ ...cmd('b'), isAvailable: () => true });
     r.register(cmd('c'));
-    const ids = r.available().map((c) => c.id).sort();
+    const ids = r
+      .available()
+      .map((c) => c.id)
+      .sort();
     expect(ids).toEqual(['b', 'c']);
   });
 

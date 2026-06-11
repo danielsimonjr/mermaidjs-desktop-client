@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { createDropdown } from '../../src/ui/dropdown';
 
@@ -9,7 +9,17 @@ function makePair() {
   document.body.append(button, menu);
   // Stub getBoundingClientRect for positioning calculations.
   button.getBoundingClientRect = () =>
-    ({ x: 100, y: 50, width: 36, height: 36, top: 50, left: 100, right: 136, bottom: 86, toJSON() {} }) as DOMRect;
+    ({
+      x: 100,
+      y: 50,
+      width: 36,
+      height: 36,
+      top: 50,
+      left: 100,
+      right: 136,
+      bottom: 86,
+      toJSON() {},
+    }) as DOMRect;
   return { button, menu };
 }
 
@@ -121,7 +131,17 @@ describe('createDropdown', () => {
     d.open();
     // Move the button.
     button.getBoundingClientRect = () =>
-      ({ x: 0, y: 200, width: 36, height: 36, top: 200, left: 0, right: 36, bottom: 236, toJSON() {} }) as DOMRect;
+      ({
+        x: 0,
+        y: 200,
+        width: 36,
+        height: 36,
+        top: 200,
+        left: 0,
+        right: 36,
+        bottom: 236,
+        toJSON() {},
+      }) as DOMRect;
     window.dispatchEvent(new Event('resize'));
     expect(menu.style.top).toBe('200px');
   });

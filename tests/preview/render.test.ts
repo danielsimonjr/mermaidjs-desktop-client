@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the mermaid module before importing render.ts.
 vi.mock('mermaid', () => ({
@@ -101,7 +101,10 @@ describe('createPreview', () => {
     let resolveFirst!: (v: { svg: string; diagramType: string }) => void;
     vi.mocked(mermaid.render)
       .mockImplementationOnce(
-        () => new Promise((r) => { resolveFirst = r as typeof resolveFirst; }) as never
+        () =>
+          new Promise((r) => {
+            resolveFirst = r as typeof resolveFirst;
+          }) as never
       )
       .mockResolvedValueOnce({ svg: '<svg>second</svg>', diagramType: 'flowchart' } as never);
 

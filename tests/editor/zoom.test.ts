@@ -1,10 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
-  createEditorZoomExtension,
   createEditorZoomController,
+  createEditorZoomExtension,
   createEditorZoomKeymap,
 } from '../../src/editor/zoom';
 

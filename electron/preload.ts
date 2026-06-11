@@ -17,12 +17,7 @@
 
 import { contextBridge, ipcRenderer } from 'electron';
 
-import type {
-  AskOptions,
-  ElectronApi,
-  OpenDialogOptions,
-  SaveDialogOptions,
-} from './types';
+import type { AskOptions, ElectronApi, OpenDialogOptions, SaveDialogOptions } from './types';
 
 // Inlined copy of IPC_CHANNELS from ./types.ts (see header comment).
 // Keep this in sync with the export there. The preload-sync test guards against drift.
