@@ -6,6 +6,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Security
+
+- Cleared all open advisories; `npm audit` now reports 0. `electron` -> 41.10.4,
+  `mermaid` -> 11.16.1, plus `dompurify` -> 3.4.13 and `nanoid` -> >= 3.3.17, which the
+  Dependabot alerts did not list separately but which the audit surfaced once the first two
+  were resolved.
+- typecheck, lint and build green.
+
+
 ## [2.5.0] - 2026-05-01
 
 ### Security
