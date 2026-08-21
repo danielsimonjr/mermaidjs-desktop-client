@@ -26,20 +26,25 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: '1.4.0'
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: bun install --frozen-lockfile
 
       - name: Typecheck (renderer + main)
-        run: npm run typecheck
+        run: bun run typecheck
 
-      # `npm run lint` is intentionally omitted: the baseline has ~120 CRLF /
-      # import-ordering findings accumulated pre-CI. Add `run: npm run lint`
+      # `bun run lint` is intentionally omitted: the baseline has ~120 CRLF /
+      # import-ordering findings accumulated pre-CI. Add `run: bun run lint`
       # back once the tree is normalized (see .gitattributes).
 
       - name: Tests
-        run: npm test
+        run: bun run test
 
       - name: Build (renderer + main)
         # Smoke-checks the full bundle without packaging into an installer —
         # keeps CI fast while still catching Vite / tsc regressions.
-        run: npm run build
+        run: bun run build
